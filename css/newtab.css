@@ -1,0 +1,1523 @@
+/* --- Root Variables --- */
+:root {
+    --primary-pad-color: #88AA11;
+    --alt-pad-color: #448844;
+    --bg-img: url('https://www.photos-public-domain.com/wp-content/uploads/2011/12/white-paper-texture-with-flecks.jpg');
+    --grid-size: 40px;
+    --controls-bg: rgba(0, 0, 0, 0.4);
+    --widget-bg: rgba(0, 0, 0, 0.1);
+    
+    /* Seasonal leaf colors - updated by TimeTheme.js */
+    --primary: #88AA11;
+    --secondary: #77AA22;
+    --ternary: #66AA33;
+}
+
+/* Base Body */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    position: relative;
+}
+
+/* Subtle vignette effect around the screen */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.4), inset 0 0 100px rgba(0, 0, 0, 0.2);
+}
+
+/* === Loading Overlay === */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.6s ease-out;
+    pointer-events: none;
+}
+
+.loading-overlay.fade-out {
+    opacity: 0;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.svg { display: none; }
+
+/* Backgrounds & Canvas */
+.bg-image {
+    width: 100%;
+    height: 100%;
+    background-image: var(--bg-img);
+    mix-blend-mode: multiply;
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    transition: none; /* No fade transition - instant appearance */
+}
+
+.bg-image.loaded {
+    opacity: 0.5;
+}
+
+.bg {
+    /* background-color set by inline script and TimeTheme.js */
+    opacity: 1;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: auto;
+    /* REMOVED expensive drop-shadow filter for performance */
+}
+
+
+/* Controls Panel - OPTIMIZED */
+.controls {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px); /* Reduced from 10px */
+    -webkit-backdrop-filter: blur(6px);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out; /* Faster transitions */
+    pointer-events: none;
+    min-width: 280px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25); /* Simplified shadow */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    visibility: hidden; /* Start completely hidden */
+}
+
+.controls.ready {
+    visibility: visible;
+}
+
+/* Create a larger invisible area that keeps the controls visible */
+.controls::before {
+    content: '';
+    position: absolute;
+    bottom: -25px;
+    left: -25px;
+    right: -25px;
+    top: -200px; /* Extend high enough to cover the settings panels */
+    z-index: -1;
+}
+.controls label {
+    display: block;
+    margin-bottom: 5px;
+}
+.controls input[type="range"] {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.control-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    margin: 15px 0;
+}
+.toggle-label {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.toggle-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Make the toggles in the controls panel lay out as a 2x2 grid */
+.controls .toggle-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 10px 12px;
+    align-items: start;
+}
+
+/* Mobile / narrow screens: stack vertically */
+@media (max-width: 520px) {
+    .controls .toggle-group {
+        grid-template-columns: 1fr;
+    }
+}
+.toggle-group label {
+    margin-bottom: 0;
+    margin-right: 5px;
+}
+.toggle-group input[type="checkbox"] {
+    margin-right: 15px;
+}
+
+/* Control buttons */
+.control-button {
+    width: 100%;
+    padding: 8px 12px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.control-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+.control-button.secondary-button {
+    background: rgba(255, 255, 255, 0.08);
+}
+.control-button.secondary-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* --- Static Leaves & Drops (Unchanged) --- */
+/* Elegant floating leaves/petals effect */
+.drop {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50% 0 50% 50%;
+    opacity: 0;
+    animation: floatDown 12s linear infinite;
+}
+
+.drop--1 { left: 10%; animation-delay: 0s; animation-duration: 11s; }
+.drop--2 { left: 25%; animation-delay: 2s; animation-duration: 13s; }
+.drop--3 { left: 40%; animation-delay: 4s; animation-duration: 14s; }
+.drop--4 { left: 60%; animation-delay: 1s; animation-duration: 12s; }
+.drop--5 { left: 75%; animation-delay: 3s; animation-duration: 15s; }
+.drop--6 { left: 90%; animation-delay: 5s; animation-duration: 13s; }
+
+/* Refined leaf/plant decoration at screen edges */
+.leaf {
+    --primary: #034a39;
+    --secondary: #023a2e;
+    --ternary: #022b23;
+    width: 80px;
+    height: 200px;
+    position: absolute;
+    opacity: 0.85;
+    filter: contrast(1.3) saturate(1.2); /* Darker, more contrasting colors */
+    overflow: hidden; /* Hide the stem base */
+}
+
+.leaf svg { 
+    width: 100%; 
+    height: 100%; 
+    display: block;
+    /* Clip the bottom portion to hide stem */
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 85%);
+}
+
+.leaf__group--1, .leaf__group--2, .leaf__group--3 {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    z-index: 3;
+    pointer-events: none;
+    overflow: visible;
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+.leaf__group--1.initialized, 
+.leaf__group--2.initialized, 
+.leaf__group--3.initialized {
+    opacity: 1;
+}
+
+/* Gentle swaying animations for leaves - darker colors with more contrast */
+.leaf--1 svg { fill: #034a39; }
+.leaf--1 { animation: sway1 4s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--2 svg { fill: #023a2e; }
+.leaf--2 { animation: sway2 5s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--3 svg { fill: #022b23; }
+.leaf--3 { animation: sway3 4.5s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--4 svg { fill: #045c4a; }
+.leaf--4 { animation: sway1 3.5s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--5 svg { fill: #01312a; }
+.leaf--5 { animation: sway2 4.8s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--6 svg { fill: #034a39; }
+.leaf--6 { animation: sway3 5.2s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--7 svg { fill: #023a2e; }
+.leaf--7 { animation: sway1 4.2s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--8 svg { fill: #045c4a; }
+.leaf--8 { animation: sway1 3.8s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--9 svg { fill: var(--secondary); }
+.leaf--9 { left: -10px; bottom: 28px; transform: scale(-2.5, 1.5) rotate(7deg); animation: sway2 4.6s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--10 svg { fill: var(--ternary); }
+.leaf--10 { left: -6px; bottom: 12px; transform: scale(1.3, 1.1) rotate(-11deg); animation: sway3 5s ease-in-out infinite; transform-origin: bottom center; }
+
+.leaf--11 svg { fill: var(--ternary); }
+.leaf--11 { left: 35px; transform: scale(-2.8, 1.6) rotate(5deg); animation: sway2 4.4s ease-in-out infinite; transform-origin: bottom center; }
+
+/* Simplified swaying animations - OPTIMIZED (reduced keyframes) */
+@keyframes sway1 {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(2deg); }
+}
+
+@keyframes sway2 {
+    0%, 100% { transform: scale(-2, 1.3) rotate(8deg); }
+    50% { transform: scale(-2, 1.3) rotate(10deg); }
+}
+
+@keyframes sway3 {
+    0%, 100% { transform: scale(1.2, 0.9) rotate(-12deg); }
+    50% { transform: scale(1.2, 0.9) rotate(-10deg); }
+}
+
+/* Falling petals/leaves/snow animation */
+@keyframes floatDown {
+    0% { 
+        top: -10%; 
+        opacity: 0;
+        transform: translateX(0) rotate(0deg);
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.5;
+    }
+    100% { 
+        top: 110%; 
+        opacity: 0;
+        transform: translateX(100px) rotate(720deg);
+    }
+}
+
+/* Widget Styles - OPTIMIZED */
+.widget {
+    position: fixed;
+    z-index: 10;
+    color: white;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6); /* Simplified shadow */
+    background: var(--widget-bg);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    
+    /* Sizing */
+    min-width: calc(var(--grid-size) * 4);
+    min-height: calc(var(--grid-size) * 2);
+    overflow: hidden;
+
+    /* Dragging */
+    pointer-events: auto;
+    cursor: move;
+    user-select: none;
+    
+    /* Start hidden, fade in when ready */
+    opacity: 0;
+    border: 2px solid transparent;
+    transition: opacity 0.5s ease-in, border-color 0.15s ease;
+}
+
+.widget.ready {
+    opacity: 1;
+}
+
+.widget:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.widget.dragging {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0.7;
+    z-index: 1000;
+    transition: none;
+}
+
+
+/* Resize Handle */
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    cursor: se-resize;
+    z-index: 11;
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent rgba(255, 255, 255, 0.1) transparent;
+    transition: border-color 0.2s ease-in-out;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.widget:hover .resize-handle::after {
+   opacity: 1;
+}
+
+.widget.dragging .resize-handle::after {
+    opacity: 1;
+}
+
+
+.settings-select {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.settings-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.settings-select option {
+    background: #1a1a1a;
+    color: white;
+}
+
+#weatherLocationClear,
+#quoteClear {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-left: 10px;
+}
+
+/* --- Default Widget Content Styles --- */
+#clock-widget {
+    /* Default position */
+    top: 40px;
+    left: 40px;
+    /* Default size */
+    width: 320px;
+    height: 140px;
+    /* Centered content with ample padding */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+#clock-display {
+    font-size: 4.5rem;
+    font-weight: 200;
+    text-align: left;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+#weather-widget {
+    top: 40px;
+    left: calc(100vw - 280px); /* Default position */
+    width: 260px;
+    height: 140px;
+    /* Centered content with ample padding */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+#weather-display {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+.weather-icon {
+    font-size: 3rem;
+    margin-right: 10px;
+}
+.weather-temp {
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+
+#quote-widget {
+    top: calc(100vh - 180px); /* Default position */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 140px;
+    /* Centered content with ample padding */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+#quote-display {
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+#quote-widget p {
+    margin: 0;
+}
+#quote-widget-text {
+    font-size: 1.25rem;
+    font-weight: 300;
+    font-style: italic;
+}
+#quote-widget-author {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 8px;
+    opacity: 0.8;
+}
+
+/* Quote text specifically for leaf/lofi theme - extra bold and dark */
+.widget.leaf #quote-widget-text {
+    font-weight: 600 !important;
+    color: #0a0502 !important;
+}
+.widget.leaf #quote-widget-author {
+    font-weight: 700 !important;
+    color: #0a0502 !important;
+    opacity: 0.9 !important;
+}
+
+/* --- Drag Grid (Unchanged) --- */
+#drag-grid-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    z-index: 999;
+    background-image: 
+        linear-gradient(rgba(128, 128, 128, 0.2) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(128, 128, 128, 0.2) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    pointer-events: none;
+}
+
+/* Google Search Widget Styles */
+#google-search-widget {
+    top: 200px;
+    left: calc(50% - 210px);
+    width: 420px;
+    height: 80px;
+    border-radius: 12px;
+    /* Make the widget background fully transparent to avoid faint gradients behind the bar */
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px; /* Ample padding on all sides */
+}
+
+.google-search-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.google-search-form {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.google-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff, #f1f1f1);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#3b3b3b;
+    font-family: Arial, sans-serif;
+    font-size:18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.google-search-form input[type="text"] {
+    flex: 1 1 auto;
+    height: 38px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.08);
+    /* Use a solid background and remove inner shadow so no subtle gradient shows behind the input */
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 15px;
+    color: #222;
+}
+.google-search-button {
+    /* Solid flat button background to avoid gradients */
+    background: #f6f6f6;
+    border: 1px solid rgba(0,0,0,0.06);
+    height: 36px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.google-search-button:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+#google-search-widget .resize-handle { width: 24px; height: 24px; }
+
+/* --- Widget Style Variants --- */
+/* Lily Pad: widgets rest on dynamically drawn canvas lily pads - OPTIMIZED */
+.widget.lilypad {
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(3px); /* Reduced from 4px */
+    -webkit-backdrop-filter: blur(3px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18); /* Simplified shadow */
+    transform: translateZ(0);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); /* Simplified shadow */
+    min-width: calc(var(--grid-size) * 3);
+    min-height: calc(var(--grid-size) * 1.2);
+}
+.widget.lilypad .resize-handle { right: 12px; bottom: 8px; }
+
+/* Glass: clear frosted glass panel - OPTIMIZED */
+.widget.glass {
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(5px) saturate(110%); /* Reduced blur from 8px to 5px */
+    -webkit-backdrop-filter: blur(5px) saturate(110%);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25); /* Simplified shadow */
+    min-width: calc(var(--grid-size) * 2.5);
+    min-height: calc(var(--grid-size) * 1.0);
+}
+.widget.glass .resize-handle { right: 8px; bottom: 8px; }
+
+/* No Backdrop: make widgets fully transparent / no glass or shadow */
+.widget.none,
+.widget.nobackdrop {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Keep layout spacing reasonable but tighten padding so widgets hug content */
+    padding: 6px 8px !important;
+    /* preserve text readability with a subtle text shadow */
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.widget.none .resize-handle, .widget.nobackdrop .resize-handle { right: 8px; bottom: 8px; }
+
+/* Vintage Paper: darker lofi aesthetic - OPTIMIZED (simplified gradients) */
+.widget.leaf {
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 3px,
+            rgba(80, 60, 45, 0.12) 3px,
+            rgba(80, 60, 45, 0.12) 6px
+        ),
+        linear-gradient(135deg, 
+            #d4c4a8 0%,
+            #c9b896 100%
+        ) !important;
+    border: 3px solid rgb(101, 84, 68) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 5px 15px rgba(60, 45, 35, 0.3) !important; /* Simplified shadow */
+    padding: 14px 18px !important;
+    color: #0d0603 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.25) !important;
+    min-width: calc(var(--grid-size) * 4) !important;
+    min-height: calc(var(--grid-size) * 2) !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.widget.leaf .resize-handle { 
+    right: 10px; 
+    bottom: 10px; 
+}
+
+/* Settings panels - CONSISTENT STYLING */
+.controls-settings-panel {
+    display: none;
+    position: absolute;
+    bottom: auto;
+    left: calc(100% + 15px);
+    top: 0;
+    /* Exact same styling as .controls */
+    z-index: 10001;
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Panel-specific properties */
+    width: 320px;
+    min-width: 280px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: settingsPanelFadeRight 0.2s ease-out;
+}
+
+/* Scrollbar styling to match main panel */
+.controls-settings-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.controls-settings-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.controls-settings-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.controls-settings-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Larger customize panel */
+.controls-settings-panel.customize-panel {
+    width: 380px;
+    pointer-events: auto; /* Ensure the settings panel is always clickable */
+}
+
+/* Consistent header styling for all settings panels */
+.controls-settings-panel h3 {
+    margin: 0 0 20px 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes settingsPanelFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes settingsPanelFadeRight {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.controls-settings-panel::after {
+    content: '';
+    position: absolute;
+    bottom: auto;
+    left: -8px;
+    top: 20px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transform: rotate(45deg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+/* Inline settings row: label on the left, controls (checkbox + input) on the right on one line */
+.settings-row.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+.settings-row.inline label {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+}
+.settings-row.inline .inline-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1 1 auto;
+}
+.settings-row.inline .inline-controls input[type="text"] {
+    flex: 1 1 auto;
+}
+
+/* Custom author grid: left column for labels/checkbox, right column is the author input that spans two rows */
+.custom-author-grid {
+    display: grid;
+    grid-template-columns: minmax(120px, 220px) 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+.custom-author-grid .left-col { display: contents; }
+.custom-author-grid .left-row { display: flex; align-items: center; gap: 8px; }
+.custom-author-grid .right-col input[type="text"] {
+    grid-row: 1 / span 2; /* span both show and custom label rows */
+    width: 100%;
+    height: 38px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.06);
+    color: white;
+}
+
+.settings-row:last-child {
+    margin-bottom: 0;
+}
+
+.settings-row label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.settings-row input[type="text"],
+.settings-row textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    color: white;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    transition: all 0.2s;
+}
+
+.settings-row textarea {
+    resize: vertical;
+    min-height: 40px;
+}
+
+.settings-row input[type="text"]:focus,
+.settings-row textarea:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    outline: none;
+}
+
+.settings-row input[type="radio"],
+.settings-row input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    vertical-align: middle;
+    position: relative;
+    margin-right: 8px;
+    transition: all 0.2s;
+}
+
+.settings-row input[type="checkbox"] {
+    border-radius: 4px;
+}
+
+.settings-row input[type="radio"]:checked,
+.settings-row input[type="checkbox"]:checked {
+    background: #4CAF50;
+}
+
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.radio-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 6px;
+}
+
+.radio-option label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    border-color: #4CAF50;
+}
+
+.settings-row input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+.settings-row input[type="checkbox"]:checked::after {
+    position: absolute;
+    top: -1px;
+    left: 3px;
+    color: white;
+    font-size: 14px;
+}
+
+.settings-save-button {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-save-button:hover {
+    background: linear-gradient(45deg, #45a049, #409444);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.settings-done-button {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 16px;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.settings-done-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.settings-label {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 8px;
+}
+
+/* Widget Style Selector Grid */
+.widget-style-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.widget-style-option {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.widget-style-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.widget-style-option .style-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.widget-style-option:hover .style-preview {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.widget-style-option input:checked + .style-preview {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.6);
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.3);
+}
+
+.preview-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    line-height: 1;
+}
+
+.style-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 4px;
+}
+
+.style-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
+}
+
+/* 3. Dynamic font scaling */
+/* Use the --widget-height-px var set by main.js */
+#clock-display {
+    font-size: calc(var(--widget-height-px, 120px) * 0.6);
+    line-height: 1.1;
+}
+
+#weather-display {
+    font-size: calc(var(--widget-height-px, 120px) * 0.25);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.weather-icon {
+    font-size: 1.5em; /* 1.5x the parent's calculated font size */
+}
+.weather-temp {
+    font-size: 2em; /* 2x the parent's calculated font size */
+}
+
+
+#quote-widget-text {
+    font-size: calc(var(--widget-height-px, 120px) * 0.15);
+    line-height: 1.3;
+}
+#quote-widget-author {
+    font-size: calc(var(--widget-height-px, 120px) * 0.12);
+}
+
+.settings-trigger {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    padding: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+}
+
+.settings-trigger:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Custom checkbox styling */
+.widget-section input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.widget-section input[type="checkbox"]:checked {
+    background: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.widget-section input[type="checkbox"]:checked::after {
+    position: absolute;
+    color: white;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.control-group input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.widget-section {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.widget-section:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.widget-section label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+.widget-section input[type="checkbox"] {
+    margin: 0;
+    justify-self: center;
+}
+
+/* Feeder UI (cutesy bag redesign) */
+#feeder-bag {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 64px;
+    height: 72px; /* a bit taller for a sack silhouette */
+    z-index: 120;
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+    transform-origin: center bottom;
+    pointer-events: none;
+    /* soft fabric gradient with a little warmth to match koi colors */
+    background: radial-gradient(120% 80% at 30% 20%, #ffe8c6 0%, rgba(255,232,198,0.9) 20%, #f0b26b 45%, #d07a3a 100%), linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
+    border-radius: 40px 40px 18px 18px; /* sack-like curve */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.35), inset 0 -6px 12px rgba(0,0,0,0.08);
+}
+
+/* Create a larger invisible hover area in bottom-right corner */
+#feeder-bag::before {
+    content: '';
+    position: absolute;
+    bottom: -18px;
+    right: -18px;
+    width: 200px;
+    height: 200px;
+    z-index: -1;
+    pointer-events: auto; /* Make sure hover area is interactive */
+}
+
+/* Show when hovering the corner area or the bag itself */
+#feeder-bag:hover,
+#feeder-bag.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#feeder-bag.visible:hover { transform: translateY(-4px) rotate(-1.5deg); box-shadow: 0 14px 26px rgba(0,0,0,0.38); }
+#feeder-bag:active { transform: translateY(2px) scale(0.98); cursor: grabbing; pointer-events: auto; }
+#feeder-bag .feeder-icon { font-size: 22px; transform: translateY(2px); }
+
+/* tiny floating idle motion to make the bag feel alive - only when visible */
+@keyframes bagFloat {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-3px) rotate(1deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+#feeder-bag.visible { animation: bagFloat 3.6s ease-in-out infinite; }
+
+/* Ghost pellet while dragging */
+#feeder-ghost {
+    position: fixed;
+    width: 16px;
+    height: 16px;
+    background: radial-gradient(circle at 35% 30%, #fff3b0, #f2a43a 60%, #b36b20 100%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: rgba(0,0,0,0.5);
+}
+
+/* bag top flap */
+#feeder-bag .bag-top {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 16px;
+    background: linear-gradient(180deg, #fff1d8, #f0b26b 60%);
+    border-radius: 8px;
+    transform-origin: center 10px;
+    transition: transform 0.18s cubic-bezier(.2,.9,.2,1), box-shadow 0.12s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    z-index: 130;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+/* opening state: flap lifts a bit and tilts */
+#feeder-bag.opening .bag-top {
+    transform: rotateX(35deg) translateY(-6px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+}
+
+
+
+/* subtle pulse on the ghost pellet while dragging */
+#feeder-ghost {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(176,104,40,0.28), inset 0 1px 0 rgba(255,255,255,0.6);
+    animation: ghostPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ghostPulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.15); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* counter badge - make it soft, pastel and playful */
+#feeder-count {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fff7f0, #ffd7bf);
+    color: #3b2a20;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 140;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.6);
+    transform-origin: center center;
+}
+
+/* pop animation for the counter when it changes */
+@keyframes counterPop {
+    0% { transform: scale(0.92); opacity: 0.9; }
+    40% { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.counter-pop { animation: counterPop 360ms cubic-bezier(.2,.9,.2,1); }
+
+/* small heart or dot accent to the badge */
+#feeder-count .count-emoji { margin-left: 4px; font-size: 12px; opacity: 0.9; }
+
+/* empty visual - softer: a little pout */
+#feeder-bag.empty { opacity: 0.85; filter: grayscale(30%); transform: translateY(2px) scale(0.98); }
+#feeder-bag.empty .feeder-icon { opacity: 0.6; filter: saturate(0.6); }
+#feeder-bag.empty::after { opacity: 0.12; }
+
+/* === Debug Overlay === */
+.debug-overlay {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 100000;
+    min-width: 250px;
+    display: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+
+.debug-overlay.active {
+    display: block;
+}
+
+.debug-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.debug-close:hover {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: rgba(255, 0, 0, 0.5);
+    transform: scale(1.1);
+}
+
+.debug-section {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.debug-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.debug-section h3 {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.debug-section div {
+    margin: 4px 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 11px;
+}
+
+.debug-section label {
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+}
+
+.debug-section input[type="checkbox"] {
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+.debug-legend {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+/* little face: eyes and smile using pseudo elements on a helper element */
+#feeder-bag .bag-face {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 18px;
+    z-index: 135;
+    pointer-events: none;
+}
+#feeder-bag .bag-face::before,
+#feeder-bag .bag-face::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    width: 6px;
+    height: 6px;
+    background: #3b2a20;
+    border-radius: 50%;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset;
+}
+#feeder-bag .bag-face::before { left: 6px; }
+#feeder-bag .bag-face::after { right: 6px; }
+#feeder-bag .bag-face .smile {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 8px;
+    border-bottom: 2px solid rgba(59,42,32,0.9);
+    border-radius: 0 0 12px 12px;
+}
+
+/* flash when trying to spawn with zero pellets */
+.empty-flash { animation: flashBag 0.28s ease-in-out; }
+@keyframes flashBag { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }

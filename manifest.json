@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Koi Pond New Tab",
+  "version": "1.0.2",
+  "description": "Cute Koi Fish swimming in a pond on your new tab page.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/Fish16.png",
+      "48": "icons/Fish48.png",
+      "128": "icons/Fish128.png"
+    },
+    "default_title": "Open Koi Pond"
+  },
+  "permissions": [
+    "storage",
+    "geolocation"
+  ],
+  "host_permissions": [
+    "https://api.open-meteo.com/*",
+    "https://geocoding-api.open-meteo.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com"
+  },
+  "icons": {
+    "16": "icons/Fish16.png",
+    "48": "icons/Fish48.png",
+    "128": "icons/Fish128.png"
+  }
+}

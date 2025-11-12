@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Koi Pond</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://www.photos-public-domain.com">
+    <link rel="dns-prefetch" href="https://api.openweathermap.org">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="css/newtab.css" as="style">
+    <link rel="preload" href="https://www.photos-public-domain.com/wp-content/uploads/2011/12/white-paper-texture-with-flecks.jpg" as="image">
+    
+    <link rel="stylesheet" type="text/css" href="css/newtab.css">
+    <script>
+        // ===== INSTANT LOAD: Apply cached settings synchronously BEFORE page renders =====
+        // This ensures no flash of unstyled content on first frame
+        (function() {
+            'use strict';
+            
+            // Get cached settings from localStorage (synchronous, instant)
+            let cachedSettings = null;
+            try {
+                const cached = localStorage.getItem('koiPondCachedSettings');
+                if (cached) {
+                    cachedSettings = JSON.parse(cached);
+                }
+            } catch (e) {
+                console.error('Failed to load cached settings:', e);
+            }
+            
+            // Calculate time of day
+            function getTimeOfDay() {
+                const hour = new Date().getHours();
+                if (hour >= 5 && hour < 8) return 'dawn';
+                if (hour >= 8 && hour < 17) return 'day';
+                if (hour >= 17 && hour < 20) return 'dusk';
+                return 'night';
+            }
+            
+            // Theme colors
+            const timeThemes = {
+                dawn: { bgColor: '#4A5568' },
+                day: { bgColor: '#005A5A' },
+                dusk: { bgColor: '#5A3A5A' },
+                night: { bgColor: '#1A1A2E' }
+            };
+            
+            // Determine theme from cache or auto
+            let timeOfDay = getTimeOfDay();
+            let bgColor = timeThemes[timeOfDay].bgColor;
+            
+            if (cachedSettings) {
+                // Use cached manual time if set
+                if (cachedSettings.manualTimeOfDay && cachedSettings.manualTimeOfDay !== 'auto') {
+                    timeOfDay = cachedSettings.manualTimeOfDay;
+                }
+                // Use custom water color if set
+                if (cachedSettings.customWaterColor) {
+                    bgColor = cachedSettings.customWaterColor;
+                } else {
+                    bgColor = timeThemes[timeOfDay].bgColor;
+                }
+            }
+            
+            // Apply background color immediately via CSS variable and directly to body
+            document.documentElement.style.setProperty('--initial-bg-color', bgColor);
+            // Apply directly to body to prevent any flash before .bg element renders
+            document.body.style.backgroundColor = bgColor;
+            
+            // Start preloading background image immediately
+            if (typeof Image !== 'undefined') {
+                const bgUrl = 'https://www.photos-public-domain.com/wp-content/uploads/2011/12/white-paper-texture-with-flecks.jpg';
+                const preloadImg = new Image();
+                preloadImg.src = bgUrl;
+            }
+            
+            // Apply widget positions and sizes from cache
+            if (cachedSettings) {
+                let styleRules = '';
+                
+                // Widget positions
+                if (cachedSettings.widgetPositions) {
+                    for (const [id, pos] of Object.entries(cachedSettings.widgetPositions)) {
+                        if (pos.leftPct !== undefined && pos.topPct !== undefined) {
+                            styleRules += `#${id} { left: ${pos.leftPct * 100}vw !important; top: ${pos.topPct * 100}vh !important; transform: none !important; }\n`;
+                        }
+                    }
+                }
+                
+                // Widget sizes
+                if (cachedSettings.widgetSizes) {
+                    for (const [id, size] of Object.entries(cachedSettings.widgetSizes)) {
+                        if (size.width && size.height) {
+                            styleRules += `#${id} { width: ${size.width} !important; height: ${size.height} !important; }\n`;
+                        }
+                    }
+                }
+                
+                // Widget visibility
+                if (cachedSettings.widgetVisibility) {
+                    for (const [id, visible] of Object.entries(cachedSettings.widgetVisibility)) {
+                        if (!visible) {
+                            styleRules += `#${id} { display: none !important; }\n`;
+                        }
+                    }
+                }
+                
+                // Inject styles immediately (minified for performance)
+                if (styleRules) {
+                    const style = document.createElement('style');
+                    style.id = 'cached-settings-style';
+                    style.textContent = styleRules.replace(/\s+/g, ' ').trim();
+                    document.head.appendChild(style);
+                }
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Loading Overlay: Covers everything until ready -->
+    <div id="loading-overlay" class="loading-overlay"></div>
+
+    <svg class="svg">
+        <symbol id="flower" viewBox="0 0 161 161" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2">
+            <path d="M68.163 51.257a69.138 69.138 0 01-.908-11.199c0-14.937 4.767-28.77 12.862-40.058 8.095 11.288 12.862 25.121 12.862 40.058a69.25 69.25 0 01-.908 11.199 69.2 69.2 0 017.277-8.561 68.508 68.508 0 0137.42-19.23 68.503 68.503 0 01-19.231 37.42 69.19 69.19 0 01-8.56 7.277 69.134 69.134 0 0111.198-.908c14.938 0 28.771 4.767 40.059 12.862-11.288 8.095-25.121 12.862-40.059 12.862-3.812 0-7.553-.311-11.198-.908a69.19 69.19 0 018.56 7.277 68.503 68.503 0 0119.231 37.42 68.503 68.503 0 01-37.42-19.231 69.19 69.19 0 01-7.277-8.56c.597 3.645.908 7.386.908 11.198 0 14.938-4.767 28.771-12.862 40.059-8.095-11.288-12.862-25.121-12.862-40.059 0-3.812.31-7.553.908-11.198a69.19 69.19 0 01-7.277 8.56 68.503 68.503 0 01-37.42 19.231 68.508 68.508 0 0119.23-37.42 69.2 69.2 0 018.561-7.277 69.25 69.25 0 01-11.199.908c-14.937 0-28.77-4.767-40.058-12.862 11.288-8.095 25.121-12.862 40.058-12.862 3.813 0 7.554.31 11.199.908a69.2 69.2 0 01-8.561-7.277 68.508 68.508 0 01-19.23-37.42 68.508 68.508 0 0137.42 19.23 69.2 69.2 0 017.277 8.561z" fill="#b362ff"/>
+            <path d="M60.583 60.583a61.241 61.241 0 01-4.532-8.842 60.588 60.588 0 01-3.048-37.083 60.588 60.588 0 0124.066 28.377 61.298 61.298 0 013.048 9.457 61.19 61.19 0 013.048-9.457 60.588 60.588 0 0124.066-28.377 60.595 60.595 0 01-3.048 37.083 61.342 61.342 0 01-4.532 8.842 61.19 61.19 0 018.842-4.532 60.585 60.585 0 0137.082-3.048 60.586 60.586 0 01-28.376 24.066 61.298 61.298 0 01-9.457 3.048 61.19 61.19 0 019.457 3.048 60.586 60.586 0 0128.376 24.066 60.593 60.593 0 01-37.082-3.048 61.29 61.29 0 01-8.842-4.532 61.29 61.29 0 014.532 8.842 60.593 60.593 0 013.048 37.082 60.586 60.586 0 01-24.066-28.376 61.19 61.19 0 01-3.048-9.457 61.298 61.298 0 01-3.048 9.457 60.586 60.586 0 01-24.066 28.376 60.585 60.585 0 013.048-37.082 61.19 61.19 0 014.532-8.842 61.342 61.342 0 01-8.842 4.532 60.595 60.595 0 01-37.083 3.048 60.588 60.588 0 0128.377-24.066 61.19 61.19 0 019.457-3.048 61.298 61.298 0 01-9.457-3.048 60.588 60.588 0 01-28.377-24.066 60.588 60.588 0 0137.083 3.048 61.241 61.241 0 018.842 4.532z" fill="#f7b7da"/>
+            <path d="M72.161 72.161a24.81 24.81 0 01-1.846-3.602 24.677 24.677 0 01-1.242-15.104 24.678 24.678 0 019.802 11.558 24.941 24.941 0 011.242 3.852 24.936 24.936 0 011.241-3.852 24.683 24.683 0 019.802-11.558 24.677 24.677 0 01-1.241 15.104 25.01 25.01 0 01-1.846 3.602 24.81 24.81 0 013.602-1.846 24.677 24.677 0 0115.104-1.242 24.678 24.678 0 01-11.558 9.802 24.941 24.941 0 01-3.852 1.242c1.295.303 2.583.716 3.852 1.241a24.683 24.683 0 0111.558 9.802 24.677 24.677 0 01-15.104-1.241 25.01 25.01 0 01-3.602-1.846 25.01 25.01 0 011.846 3.602 24.677 24.677 0 011.241 15.104 24.683 24.683 0 01-9.802-11.558 24.936 24.936 0 01-1.241-3.852 24.941 24.941 0 01-1.242 3.852 24.678 24.678 0 01-9.802 11.558 24.677 24.677 0 011.242-15.104 24.81 24.81 0 011.846-3.602 25.01 25.01 0 01-3.602 1.846 24.677 24.677 0 01-15.104 1.241 24.683 24.683 0 0111.558-9.802 24.936 24.936 0 013.852-1.241 24.941 24.941 0 01-3.852-1.242 24.678 24.678 0 01-11.558-9.802 24.677 24.677 0 0115.104 1.242 24.81 24.81 0 013.602 1.846zm7.956 7.956" fill="#ff8976"/>
+        </symbol>
+        <symbol id="leaf">
+            <path d="M0 0s35.207 162.973 78.735 214c72.569 85.068 57.825-34.902 45.407-34C55.921 184.955 0 0 0 0z"/>
+        </symbol>
+    </svg>
+
+    <div class="bg">
+        <div class="bg-image"></div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="koiSlider">Koi Count <span id="koiCount">6</span></label>
+            <input type="range" id="koiSlider" min="0" max="50" value="6">
+        </div>
+        <div class="control-group">
+            <label for="lillySlider">Lilly Pad Count <span id="lillyCount">8</span></label>
+            <input type="range" id="lillySlider" min="0" max="20" value="8">
+        </div>
+        
+        <hr class="control-divider">
+
+        
+        <div class="control-group toggle-group">
+            <div class="widget-section">
+                <label for="clockToggle">Clock</label>
+                <input type="checkbox" id="clockToggle" class="widget-toggle" data-widget-id="clock-widget">
+                <button class="settings-trigger" data-panel-id="clock-settings-panel" aria-label="Clock Settings">⚙️</button>
+            </div>
+            
+            <div class="widget-section">
+                <label for="weatherToggle">Weather</label>
+                <input type="checkbox" id="weatherToggle" class="widget-toggle" data-widget-id="weather-widget">
+                <button class="settings-trigger" data-panel-id="weather-settings-panel" aria-label="Weather Settings">⚙️</button>
+            </div>
+            
+            <div class="widget-section">
+                <label for="quoteToggle">Quote</label>
+                <input type="checkbox" id="quoteToggle" class="widget-toggle" data-widget-id="quote-widget">
+                <button class="settings-trigger" data-panel-id="quote-settings-panel" aria-label="Quote Settings">⚙️</button>
+            </div>
+            
+            <div class="widget-section">
+                <label for="googleSearchToggle">Search</label>
+                <input type="checkbox" id="googleSearchToggle" class="widget-toggle" data-widget-id="google-search-widget">
+                <button class="settings-trigger" data-panel-id="google-search-settings-panel" aria-label="Search Settings">⚙️</button>
+            </div>
+        </div>
+
+        <div class="settings-row">
+            <label class="settings-label">Widget Style</label>
+            <div class="widget-style-grid">
+                <label class="widget-style-option" data-style="lilypad">
+                    <input type="radio" name="widgetStyle" value="lilypad" id="style-lilypad" checked>
+                    <div class="style-preview">
+                        <div class="style-name">Lily Pad</div>
+                    </div>
+                </label>
+                <label class="widget-style-option" data-style="glass">
+                    <input type="radio" name="widgetStyle" value="glass" id="style-glass">
+                    <div class="style-preview">
+                        <div class="style-name">Clear Glass</div>
+                    </div>
+                </label>
+                <label class="widget-style-option" data-style="leaf">
+                    <input type="radio" name="widgetStyle" value="leaf" id="style-leaf">
+                    <div class="style-preview">
+                        <div class="style-name">Vintage Paper</div>
+                    </div>
+                </label>
+                <label class="widget-style-option" data-style="none">
+                    <input type="radio" name="widgetStyle" value="none" id="style-none">
+                    <div class="style-preview">
+                        <div class="style-name">Transparent</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <hr class="control-divider">
+
+        <div class="settings-row">
+            <button class="control-button" id="customizeButton">🎨 Customize Pond Theme</button>
+        </div>
+
+        <hr class="control-divider">
+
+        <div class="settings-row">
+            <label>
+                <input type="checkbox" id="performanceModeToggle">
+                Performance Mode (fewer effects)
+            </label>
+        </div>
+
+        <div id="weather-settings-panel" class="controls-settings-panel">
+            <h3>🌤️ Weather Settings</h3>
+            <div class="settings-row">
+                <label class="settings-label">Temperature Units</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" name="weatherUnit" id="weatherUnitC" value="C" checked>
+                        <label for="weatherUnitC">°C</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="weatherUnit" id="weatherUnitF" value="F">
+                        <label for="weatherUnitF">°F</label>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-row">
+                <label for="locationInput">Manual Location:</label>
+                <input type="text" id="locationInput" placeholder="e.g., London">
+            </div>
+            <div class="settings-row">
+                <span id="weatherLocationClear">(Clear to use auto-location)</span>
+            </div>
+            <button type="button" class="settings-done-button" data-panel-id="weather-settings-panel">Done</button>
+        </div>
+        
+        <div id="quote-settings-panel" class="controls-settings-panel">
+            <h3>💭 Quote Settings</h3>
+            <div class="settings-row">
+                <label for="customQuoteInput">Custom Quote:</label>
+                <textarea id="customQuoteInput" rows="3" placeholder="Type your own quote..."></textarea>
+            </div>
+            <div class="settings-row">
+                <label for="showAuthorToggle">Show author</label>
+                <input type="checkbox" id="showAuthorToggle" checked>
+            </div>
+            <div class="settings-row">
+                <label for="customAuthorInput">Custom Author</label>
+                <input type="text" id="customAuthorInput" placeholder="Author name (e.g., Maya Angelou)" />
+            </div>
+            <div class="settings-row">
+                <span id="quoteClear">(Clear to show random quotes)</span>
+            </div>
+            <button type="button" class="settings-done-button" data-panel-id="quote-settings-panel">Done</button>
+        </div>
+
+        <div id="google-search-settings-panel" class="controls-settings-panel">
+            <h3>🔍 Search Settings</h3>
+            <div class="settings-row">
+                <p style="margin: 0; color: rgba(255, 255, 255, 0.7); font-size: 14px;">This widget opens Google search results in the current tab.</p>
+            </div>
+            <button type="button" class="settings-done-button" data-panel-id="google-search-settings-panel">Done</button>
+        </div>
+
+        <div id="clock-settings-panel" class="controls-settings-panel">
+            <h3>🕐 Clock Settings</h3>
+            <div class="settings-row">
+                <label class="settings-label">Time Format</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" name="timeFormat" id="format12h" value="12" checked>
+                        <label for="format12h">12-hour</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="timeFormat" id="format24h" value="24">
+                        <label for="format24h">24-hour</label>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-row">
+                <label for="timezoneSelect">Time Zone:</label>
+                <select id="timezoneSelect" class="settings-select">
+                    <option value="local">Local Time</option>
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">New York</option>
+                    <option value="America/Los_Angeles">Los Angeles</option>
+                    <option value="Europe/London">London</option>
+                    <option value="Europe/Paris">Paris</option>
+                    <option value="Asia/Tokyo">Tokyo</option>
+                    <option value="Asia/Shanghai">Shanghai</option>
+                    <option value="Australia/Sydney">Sydney</option>
+                </select>
+            </div>
+            
+            <button type="button" class="settings-done-button" data-panel-id="clock-settings-panel">Done</button>
+        </div>
+
+        <div id="customize-settings-panel" class="controls-settings-panel customize-panel">
+            <h3>🎨 Pond Customization</h3>
+            
+            <div class="settings-row">
+                <label class="settings-label">Time of Day</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" name="timeOfDay" id="timeAuto" value="auto" checked>
+                        <label for="timeAuto">Auto</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="timeOfDay" id="timeDawn" value="dawn">
+                        <label for="timeDawn">Dawn</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="timeOfDay" id="timeDay" value="day">
+                        <label for="timeDay">Day</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="timeOfDay" id="timeDusk" value="dusk">
+                        <label for="timeDusk">Dusk</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="timeOfDay" id="timeNight" value="night">
+                        <label for="timeNight">Night</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="control-divider">
+
+            <div class="settings-row">
+                <label class="settings-label">Background</label>
+                <button type="button" class="control-button" id="uploadBgButton">Upload Image</button>
+                <input type="file" id="uploadBgInput" accept="image/*" style="display: none;">
+                <button type="button" class="control-button secondary-button" id="clearBgButton">Reset to Default</button>
+            </div>
+
+            <hr class="control-divider">
+
+            <div class="settings-row">
+                <label class="settings-label">Pond Water Color</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="color" id="waterColorPicker" value="#005A5A" style="width: 50px; height: 30px; border: none; border-radius: 4px; cursor: pointer;">
+                    <button type="button" class="control-button secondary-button" id="resetWaterColor" style="flex: 1;">Reset</button>
+                </div>
+            </div>
+
+            <button type="button" class="settings-done-button" data-panel-id="customize-settings-panel">Done</button>
+        </div>
+
+    </div>
+    
+    <div id="clock-widget" class="widget">
+        <div id="clock-display"></div>
+        <div class="resize-handle"></div>
+    </div>
+    
+    <div id="weather-widget" class="widget">
+        <div id="weather-display"></div>
+        <div class="resize-handle"></div>
+    </div>
+    
+    <div id="quote-widget" class="widget">
+        <div id="quote-display">
+            <p id="quote-widget-text"></p>
+            <p id="quote-widget-author"></p>
+        </div>
+        <div class="resize-handle"></div>
+    </div>
+
+    <div id="google-search-widget" class="widget">
+        <div class="google-search-container">
+            <form id="google-search-form" class="google-search-form" role="search">
+                <input id="google-search-input" type="text" placeholder="Search Google or type a URL" autocomplete="on" />
+            </form>
+        </div>
+        <div class="resize-handle"></div>
+    </div>
+
+    <div id="drag-grid-overlay"></div>
+
+    <!-- Decorative leaves on screen edges -->
+    <div class="leaf__group leaf__group--1" style="left: 0; bottom: 0;">
+        <div class="leaf leaf--1"><svg><use href="#leaf"/></svg></div>
+        <div class="leaf leaf--2"><svg><use href="#leaf"/></svg></div>
+        <div class="leaf leaf--3"><svg><use href="#leaf"/></svg></div>
+    </div>
+    <div class="leaf__group leaf__group--2" style="right: 0; bottom: 0;">
+        <div class="leaf leaf--4"><svg><use href="#leaf"/></svg></div>
+        <div class="leaf leaf--5"><svg><use href="#leaf"/></svg></div>
+        <div class="leaf leaf--6"><svg><use href="#leaf"/></svg></div>
+    </div>
+    <div class="leaf__group leaf__group--3" style="left: 120px; bottom: 0;">
+        <div class="leaf leaf--7"><svg><use href="#leaf"/></svg></div>
+    </div>
+    
+    <canvas id="koiCanvas"></canvas>
+    
+    <!-- Debug Overlay -->
+    <div id="debug-overlay" class="debug-overlay">
+        <button id="debug-close" class="debug-close" title="Close Debug Panel">✕</button>
+        <div class="debug-section">
+            <h3> Performance</h3>
+            <div id="debug-fps">FPS: --</div>
+            <div id="debug-frame-time">Frame Time: --ms</div>
+            <div id="debug-min-fps">Min FPS: --</div>
+            <div id="debug-max-fps">Max FPS: --</div>
+            <div id="debug-memory">Memory: --</div>
+        </div>
+        <div class="debug-section">
+            <h3> Render Stats</h3>
+            <div id="debug-entities">Total Entities: --</div>
+            <div id="debug-draw-calls">Draw Calls/Frame: --</div>
+            <div id="debug-updates-skipped">Updates Skipped: --</div>
+        </div>
+        <div class="debug-section">
+            <h3> Simulation</h3>
+            <div id="debug-koi-count">Koi: --</div>
+            <div id="debug-lily-count">Lily Pads: --</div>
+            <div id="debug-particle-count">Particles: --</div>
+            <div id="debug-food-count">Food Pellets: --</div>
+            <div id="debug-dragonfly-count">Dragonflies: --</div>
+            <div id="debug-ripple-count">Ripples: --</div>
+        </div>
+        <div class="debug-section">
+            <h3> Visuals</h3>
+            <label><input type="checkbox" id="debug-vectors" checked> Fish Vectors</label>
+            <div class="debug-legend">🟢 Green = Current velocity<br>🟡 Yellow = Target angle</div>
+            <label><input type="checkbox" id="debug-hitboxes"> Hitboxes</label><br>
+            <label><input type="checkbox" id="debug-grid"> Grid Overlay</label>
+        </div>
+    </div>
+    
+    <script src="js/main.js" type="module" defer></script>
+</body>
+</html>
