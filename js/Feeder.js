@@ -202,8 +202,8 @@ function tryRefill() {
 
 function savePelletState() {
     const state = { pelletCount, lastRefill: lastRefillTimestamp || Date.now() };
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        try { chrome.storage.sync.set({ feederState: state }); } catch (err) {}
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        try { chrome.storage.local.set({ feederState: state }); } catch (err) {}
     } else {
         try { localStorage.setItem('feederState', JSON.stringify(state)); } catch (err) {}
     }
@@ -211,9 +211,9 @@ function savePelletState() {
 
 function loadPelletState() {
     return new Promise((resolve) => {
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             try {
-                chrome.storage.sync.get(['feederState'], (res) => {
+                chrome.storage.local.get(['feederState'], (res) => {
                     if (res && res.feederState) {
                         const s = res.feederState;
                         if (typeof s.pelletCount === 'number') pelletCount = Math.min(MAX_PELLETS, Math.max(0, s.pelletCount));

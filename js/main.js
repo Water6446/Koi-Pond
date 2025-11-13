@@ -101,9 +101,13 @@ function mergeSettings(saved, defaults) {
     return newSettings;
 }
 
+// Debounce timer for settings saves
+let saveSettingsTimer = null;
+
 /**
  * Saves the specified settings object to chrome.storage.
  * This merges the new settings with the existing ones.
+ * Uses debouncing to prevent excessive writes.
  */
 function saveSettings(newSettings) {
     // Merge new settings into the current state
@@ -123,11 +127,18 @@ function saveSettings(newSettings) {
         console.warn('Failed to cache settings to localStorage:', e);
     }
     
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.set({ userSettings: userSettings });
-    } else {
-        console.warn("Storage API not available. Settings not saved.");
+    // Debounce: only save after 500ms of no new changes
+    if (saveSettingsTimer) {
+        clearTimeout(saveSettingsTimer);
     }
+    
+    saveSettingsTimer = setTimeout(() => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ userSettings: userSettings });
+        } else {
+            console.warn("Storage API not available. Settings not saved.");
+        }
+    }, 500);
 }
 
 
@@ -270,8 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = parseInt(e.target.value);
         document.getElementById('koiCount').textContent = count;
         updateKoisSize(count);
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.set({ koiCount: count });
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ koiCount: count });
         }
     });
     
@@ -279,8 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = parseInt(e.target.value);
         document.getElementById('lillyCount').textContent = count;
         updateLillypadsSize(count);
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.set({ lillyCount: count });
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ lillyCount: count });
         }
     });
 
@@ -1181,8 +1192,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let initialKoiCount = parseInt(document.getElementById('koiSlider').value) || 6;
         let initialLillyCount = parseInt(document.getElementById('lillySlider').value) || 8;
 
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.get(['koiCount', 'lillyCount', 'userSettings'], (result) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['koiCount', 'lillyCount', 'userSettings'], (result) => {
                 initialKoiCount = result.koiCount !== undefined ? result.koiCount : initialKoiCount;
                 initialLillyCount = result.lillyCount !== undefined ? result.lillyCount : initialLillyCount;
 

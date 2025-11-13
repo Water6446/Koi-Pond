@@ -63,8 +63,8 @@ export function initWeather(settings, saveCallback) {
  * Grabs weather data from storage and displays it immediately.
  */
 function loadCachedWeather() {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get('cachedWeather', (result) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get('cachedWeather', (result) => {
             if (result.cachedWeather && result.cachedWeather.temp !== null) {
                 displayWeather(result.cachedWeather.temp, result.cachedWeather.code);
             } else {
@@ -227,8 +227,8 @@ function displayWeather(temp, code) {
  */
 function saveWeather(temp, code) {
     const cachedWeather = { temp, code };
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.set({ cachedWeather });
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ cachedWeather });
     }
 }
 

@@ -54,8 +54,8 @@ export function initClock() {
     updateTime();
 
     // Load saved settings (but clock is already showing with defaults)
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get(['clockSettings'], (result) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['clockSettings'], (result) => {
             if (result.clockSettings) {
                 clockSettings = result.clockSettings;
                 console.log("Loaded clock settings:", clockSettings);
@@ -83,8 +83,8 @@ export function initClock() {
 
         clockSettings = newSettings;
 
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.set({ clockSettings: newSettings });
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ clockSettings: newSettings });
         }
     }
 
