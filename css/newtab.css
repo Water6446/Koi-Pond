@@ -7,7 +7,7 @@
     --controls-bg: rgba(0, 0, 0, 0.4);
     --widget-bg: rgba(0, 0, 0, 0.1);
     
-    /* Seasonal leaf colors - updated by TimeTheme.js */
+    /* Leaf colors - updated by TimeTheme.js */
     --primary: #88AA11;
     --secondary: #77AA22;
     --ternary: #66AA33;
@@ -576,6 +576,33 @@ canvas {
     pointer-events: none;
 }
 
+/* Middle guide lines for grid */
+#drag-grid-overlay::before,
+#drag-grid-overlay::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+}
+
+/* Vertical center line */
+#drag-grid-overlay::before {
+    left: 50%;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    transform: translateX(-50%);
+}
+
+/* Horizontal center line */
+#drag-grid-overlay::after {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    transform: translateY(-50%);
+}
+
 /* Google Search Widget Styles */
 #google-search-widget {
     top: 200px;
@@ -768,8 +795,9 @@ canvas {
 
 /* Larger customize panel */
 .controls-settings-panel.customize-panel {
-    width: 380px;
+    width: 420px;
     pointer-events: auto; /* Ensure the settings panel is always clickable */
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
 }
 
 /* Consistent header styling for all settings panels */
@@ -1385,6 +1413,192 @@ canvas {
 #feeder-bag.empty { opacity: 0.85; filter: grayscale(30%); transform: translateY(2px) scale(0.98); }
 #feeder-bag.empty .feeder-icon { opacity: 0.6; filter: saturate(0.6); }
 #feeder-bag.empty::after { opacity: 0.12; }
+
+/* === Time Slider (Half-Oval with Sun Icon - Always Visible) === */
+.time-slider-wrapper {
+    position: relative;
+    width: 100%;
+    padding: 10px 20px 20px;
+    margin-top: 10px;
+}
+
+/* SVG arc that shows the gradient track */
+.time-arc-svg {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+}
+
+.time-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 100px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    padding: 0;
+}
+
+/* Hide the default track - we'll draw our own arc with SVG */
+.time-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 100px;
+    background: transparent;
+    border: none;
+}
+
+.time-slider::-moz-range-track {
+    width: 100%;
+    height: 100px;
+    background: transparent;
+    border: none;
+}
+
+/* Sun icon thumb (handle) - follows arc path */
+.time-slider {
+    --sun-y-offset: 0px;
+}
+
+.time-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle at 35% 35%, #FFF9DC, #FFD700 45%, #FFA500 100%);
+    border-radius: 50%;
+    cursor: grab;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 
+        0 0 25px rgba(255, 215, 0, 0.7), 
+        0 0 40px rgba(255, 215, 0, 0.4),
+        0 3px 10px rgba(0, 0, 0, 0.4);
+    position: relative;
+    margin-top: calc(30px + var(--sun-y-offset));
+    transition: margin-top 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.time-slider::-moz-range-thumb {
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle at 35% 35%, #FFF9DC, #FFD700 45%, #FFA500 100%);
+    border-radius: 50%;
+    cursor: grab;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 
+        0 0 25px rgba(255, 215, 0, 0.7), 
+        0 0 40px rgba(255, 215, 0, 0.4),
+        0 3px 10px rgba(0, 0, 0, 0.4);
+    margin-top: calc(-50px + var(--sun-y-offset));
+    transition: margin-top 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.time-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 
+        0 0 35px rgba(255, 215, 0, 0.85), 
+        0 0 50px rgba(255, 215, 0, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.time-slider::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 
+        0 0 35px rgba(255, 215, 0, 0.85), 
+        0 0 50px rgba(255, 215, 0, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.time-slider::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.08);
+}
+
+.time-slider::-moz-range-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.08);
+}
+
+/* Info area below slider */
+.slider-info {
+    display: flex;
+    justify-content: center; 
+}
+
+/* Time display - now clickable/editable */
+.time-display {
+    font-size: 20px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 1.5px;
+    flex: 0 0 auto;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.time-display:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Time input when editing */
+.time-display input {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    font-family: 'Courier New', monospace;
+    padding: 6px 12px;
+    border-radius: 6px;
+    width: 100px;
+    text-align: center;
+    outline: none;
+}
+
+.time-display input:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Sync to current time button */
+.sync-time-button {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.sync-time-button:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.3));
+    border-color: rgba(255, 215, 0, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.sync-time-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(255, 215, 0, 0.2);
+}
 
 /* === Debug Overlay === */
 .debug-overlay {

@@ -1,19 +1,6 @@
 // --- js/TimeTheme.js ---
 
 /**
- * Gets the current season based on date
- */
-export function getCurrentSeason() {
-    const now = new Date();
-    const month = now.getMonth(); // 0-11
-    
-    if (month >= 2 && month <= 4) return 'spring'; // Mar-May
-    if (month >= 5 && month <= 7) return 'summer'; // Jun-Aug
-    if (month >= 8 && month <= 10) return 'fall'; // Sep-Nov
-    return 'winter'; // Dec-Feb
-}
-
-/**
  * Gets the current time of day
  */
 export function getTimeOfDay() {
@@ -73,140 +60,145 @@ function lerpRGBA(rgba1, rgba2, t) {
 }
 
 /**
- * Get blended theme colors based on current time
+ * Get fluid blended theme colors based on time (system or manual)
+ * Uses keyframe-based interpolation for perfectly smooth 24-hour transitions
+ * @param {number|null} manualHour - Optional manual hour override (0-24 decimal)
+ * @returns {Object} Interpolated theme colors
  */
-function getBlendedTimeTheme() {
-    const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const timeDecimal = hour + minute / 60; // 0-24 with decimals
+function getFluidBlendedTheme(manualHour = null) {
+    // Get current time in decimal hours (e.g., 14.5 = 2:30 PM)
+    let timeDecimal;
+    if (manualHour !== null) {
+        timeDecimal = manualHour;
+    } else {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const second = now.getSeconds();
+        // Include seconds for ultra-smooth transitions
+        timeDecimal = hour + minute / 60 + second / 3600;
+    }
     
-    // Define time periods with their hour ranges
-    const periods = [
-        { name: 'night', start: 0, end: 5 },      // 00:00 - 05:00
-        { name: 'dawn', start: 5, end: 8 },       // 05:00 - 08:00
-        { name: 'day', start: 8, end: 17 },       // 08:00 - 17:00
-        { name: 'dusk', start: 17, end: 20 },     // 17:00 - 20:00
-        { name: 'night', start: 20, end: 24 }     // 20:00 - 24:00
-    ];
+    // Wrap to 0-24 range
+    while (timeDecimal < 0) timeDecimal += 24;
+    while (timeDecimal >= 24) timeDecimal -= 24;
     
-    // Find current and next period
-    let currentPeriod, nextPeriod, blendFactor;
+    // Find the two nearest keyframes
+    let keyframe1 = colorKeyframes[0];
+    let keyframe2 = colorKeyframes[1];
     
-    for (let i = 0; i < periods.length; i++) {
-        const period = periods[i];
-        if (timeDecimal >= period.start && timeDecimal < period.end) {
-            currentPeriod = period.name;
-            
-            // Get next period
-            const nextIndex = (i + 1) % periods.length;
-            nextPeriod = periods[nextIndex].name;
-            
-            // Calculate blend factor (0 = fully current, 1 = fully next)
-            const periodDuration = period.end - period.start;
-            const timeInPeriod = timeDecimal - period.start;
-            blendFactor = timeInPeriod / periodDuration;
-            
+    for (let i = 0; i < colorKeyframes.length - 1; i++) {
+        if (timeDecimal >= colorKeyframes[i].hour && timeDecimal < colorKeyframes[i + 1].hour) {
+            keyframe1 = colorKeyframes[i];
+            keyframe2 = colorKeyframes[i + 1];
             break;
         }
     }
     
-    // Fallback
-    if (!currentPeriod) {
-        currentPeriod = 'night';
-        nextPeriod = 'dawn';
-        blendFactor = 0;
-    }
+    // Calculate interpolation factor between the two keyframes
+    const duration = keyframe2.hour - keyframe1.hour;
+    const elapsed = timeDecimal - keyframe1.hour;
+    const t = duration > 0 ? elapsed / duration : 0;
     
-    const theme1 = timeThemes[currentPeriod];
-    const theme2 = timeThemes[nextPeriod];
+    // Apply easing for even smoother transitions (optional - can remove for pure linear)
+    const easedT = t; // Linear - can use easeInOutSine(t) for smoother feel
     
-    // Blend colors
+    // Interpolate all color properties
     return {
-        bgColor: lerpColor(theme1.bgColor, theme2.bgColor, blendFactor),
-        waterTint: lerpRGBA(theme1.waterTint, theme2.waterTint, blendFactor),
+        bgColor: lerpColor(keyframe1.bgColor, keyframe2.bgColor, easedT),
+        waterTint: lerpRGBA(keyframe1.waterTint, keyframe2.waterTint, easedT),
         leafColors: {
-            primary: lerpColor(theme1.leafColors.primary, theme2.leafColors.primary, blendFactor),
-            secondary: lerpColor(theme1.leafColors.secondary, theme2.leafColors.secondary, blendFactor),
-            ternary: lerpColor(theme1.leafColors.ternary, theme2.leafColors.ternary, blendFactor)
+            primary: lerpColor(keyframe1.leafColors.primary, keyframe2.leafColors.primary, easedT),
+            secondary: lerpColor(keyframe1.leafColors.secondary, keyframe2.leafColors.secondary, easedT),
+            ternary: lerpColor(keyframe1.leafColors.ternary, keyframe2.leafColors.ternary, easedT)
         }
     };
 }
 
 /**
- * Color schemes for different times of day
+ * Optional easing function for even smoother transitions
+ */
+function easeInOutSine(t) {
+    return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+/**
+ * Color keyframes for 24-hour gradient (hour-based)
+ * Each keyframe has an hour (0-24) and theme colors
+ * Colors blend smoothly between these keyframes
+ */
+const colorKeyframes = [
+    { hour: 0, bgColor: '#1A1A2E', waterTint: 'rgba(100, 100, 150, 0.15)', leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' } }, // Midnight
+    { hour: 5, bgColor: '#1A1A2E', waterTint: 'rgba(100, 100, 150, 0.15)', leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' } }, // Pre-dawn
+    { hour: 6, bgColor: '#2C3E50', waterTint: 'rgba(150, 120, 150, 0.15)', leafColors: { primary: '#5B6A77', secondary: '#6B7A87', ternary: '#7B8A97' } }, // Early dawn
+    { hour: 7, bgColor: '#4A5568', waterTint: 'rgba(255, 200, 150, 0.15)', leafColors: { primary: '#7B8A97', secondary: '#8B9AA7', ternary: '#9BAAB7' } }, // Dawn
+    { hour: 9, bgColor: '#2A5A5A', waterTint: 'rgba(160, 220, 245, 0.1)', leafColors: { primary: '#77AA22', secondary: '#77AA22', ternary: '#66AA33' } }, // Morning
+    { hour: 12, bgColor: '#005A5A', waterTint: 'rgba(135, 206, 235, 0.1)', leafColors: { primary: '#88AA11', secondary: '#77AA22', ternary: '#66AA33' } }, // Noon
+    { hour: 15, bgColor: '#005A5A', waterTint: 'rgba(135, 206, 235, 0.1)', leafColors: { primary: '#88AA11', secondary: '#77AA22', ternary: '#66AA33' } }, // Afternoon
+    { hour: 17, bgColor: '#3A4A5A', waterTint: 'rgba(200, 170, 130, 0.15)', leafColors: { primary: '#99AA22', secondary: '#88AA33', ternary: '#77AA44' } }, // Late afternoon
+    { hour: 18, bgColor: '#5A3A5A', waterTint: 'rgba(255, 140, 100, 0.2)', leafColors: { primary: '#AA8811', secondary: '#AA7722', ternary: '#AA6633' } }, // Dusk
+    { hour: 20, bgColor: '#3A2A4A', waterTint: 'rgba(150, 100, 120, 0.18)', leafColors: { primary: '#776688', secondary: '#887799', ternary: '#9988AA' } }, // Evening
+    { hour: 22, bgColor: '#1A1A2E', waterTint: 'rgba(100, 100, 150, 0.15)', leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' } }, // Night
+    { hour: 24, bgColor: '#1A1A2E', waterTint: 'rgba(100, 100, 150, 0.15)', leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' } }  // Midnight (wrap)
+];
+
+/**
+ * Old discrete color schemes - kept for backward compatibility
  */
 const timeThemes = {
     dawn: {
-        bgColor: '#4A5568', // Cool blue-gray
-        waterTint: 'rgba(255, 200, 150, 0.15)', // Warm sunrise
+        bgColor: '#4A5568',
+        waterTint: 'rgba(255, 200, 150, 0.15)',
         leafColors: { primary: '#7B8A97', secondary: '#8B9AA7', ternary: '#9BAAB7' }
     },
     day: {
-        bgColor: '#005A5A', // Default teal
-        waterTint: 'rgba(135, 206, 235, 0.1)', // Bright sky blue
+        bgColor: '#005A5A',
+        waterTint: 'rgba(135, 206, 235, 0.1)',
         leafColors: { primary: '#88AA11', secondary: '#77AA22', ternary: '#66AA33' }
     },
     dusk: {
-        bgColor: '#5A3A5A', // Purple-ish
-        waterTint: 'rgba(255, 140, 100, 0.2)', // Orange sunset
+        bgColor: '#f80202ff',
+        waterTint: 'rgba(255, 140, 100, 0.2)',
         leafColors: { primary: '#AA8811', secondary: '#AA7722', ternary: '#AA6633' }
     },
     night: {
-        bgColor: '#1A1A2E', // Dark blue
-        waterTint: 'rgba(100, 100, 150, 0.15)', // Moonlight blue
+        bgColor: '#1A1A2E',
+        waterTint: 'rgba(100, 100, 150, 0.15)',
         leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' }
     }
 };
 
 /**
- * Color schemes for different seasons
- */
-const seasonThemes = {
-    spring: {
-        leafColors: { primary: '#88CC44', secondary: '#77DD55', ternary: '#99EE66' },
-        dropColors: ['#FFCCEE', '#FFDDFF', '#EECCFF'], // Pink petals
-        hasPetals: true
-    },
-    summer: {
-        leafColors: { primary: '#55AA22', secondary: '#66BB33', ternary: '#77CC44' },
-        dropColors: ['rgba(200, 230, 255, 0.6)', 'rgba(180, 220, 255, 0.5)'],
-        hasPetals: false
-    },
-    fall: {
-        leafColors: { primary: '#DD7722', secondary: '#CC6611', ternary: '#BB5500' },
-        dropColors: ['#DD8833', '#CC7722', '#BB6611'], // Falling leaves
-        hasPetals: false
-    },
-    winter: {
-        leafColors: { primary: '#667788', secondary: '#778899', ternary: '#8899AA' },
-        dropColors: ['rgba(255, 255, 255, 0.8)', 'rgba(240, 248, 255, 0.7)'], // Snowflakes
-        hasPetals: false
-    }
-};
-
-/**
- * Apply time-based theme to the background
- * @param {string|null} manualTimeOfDay - Override time of day ('dawn', 'day', 'dusk', 'night', or null for auto)
+ * Apply time-based theme to the background with fluid color blending
+ * @param {string|null} manualTimeOfDay - OLD PARAM: Override time of day ('dawn', 'day', 'dusk', 'night', or null for auto) - DEPRECATED in favor of manualHour
  * @param {string|null} customWaterColor - Custom water color (hex string or null)
+ * @param {number|null} manualHour - NEW PARAM: Manual hour override for slider (0-24 decimal, or null for system time)
  */
-export function applyTimeTheme(manualTimeOfDay = null, customWaterColor = null) {
+export function applyTimeTheme(manualTimeOfDay = null, customWaterColor = null, manualHour = null) {
     try {
-        const timeOfDay = manualTimeOfDay || getTimeOfDay();
-        const season = getCurrentSeason();
-        
-        const theme = timeThemes[timeOfDay];
-        const seasonTheme = seasonThemes[season];
-        
-        if (!theme || !seasonTheme) {
-            console.error('Invalid theme or season theme');
-            return;
+        // Get fluid blended colors based on current or manual time
+        let theme;
+        if (manualHour !== null) {
+            // Manual mode: use slider hour for fluid interpolation
+            theme = getFluidBlendedTheme(manualHour);
+        } else if (manualTimeOfDay && manualTimeOfDay !== 'auto') {
+            // Legacy discrete mode support (backward compatibility)
+            const legacyTheme = timeThemes[manualTimeOfDay];
+            if (legacyTheme) {
+                theme = legacyTheme;
+            } else {
+                theme = getFluidBlendedTheme(null);
+            }
+        } else {
+            // Auto mode: use system time for fluid interpolation
+            theme = getFluidBlendedTheme(null);
         }
         
         const bg = document.querySelector('.bg');
         if (bg) {
-            // Use custom water color if provided, otherwise use theme color
-            bg.style.backgroundColor = customWaterColor || theme.bgColor;
+            // Use custom water color if provided, otherwise use interpolated theme color
+            const targetColor = customWaterColor || theme.bgColor;
+            bg.style.backgroundColor = targetColor;
         }
         
         // Apply water tint overlay
@@ -222,86 +214,64 @@ export function applyTimeTheme(manualTimeOfDay = null, customWaterColor = null) 
                 height: 100%;
                 z-index: 1;
                 pointer-events: none;
-                transition: background-color 2s ease;
+                transition: background-color 1s ease;
             `;
             document.body.insertBefore(tintOverlay, document.body.firstChild);
         }
         tintOverlay.style.backgroundColor = theme.waterTint;
         
-        // Apply seasonal leaf colors
-        applySeasonalLeafColors(seasonTheme.leafColors);
+        // Apply interpolated leaf colors
+        applyLeafColors(theme.leafColors);
         
-        // Apply seasonal drop colors (water drops or petals/snow)
-        applySeasonalDrops(seasonTheme.dropColors, season);
-        
-        // Store current theme in body dataset
+        // Store current mode in body dataset
+        const timeOfDay = manualTimeOfDay || (manualHour !== null ? 'manual' : 'auto');
         document.body.dataset.timeOfDay = timeOfDay;
-        document.body.dataset.season = season;
     } catch (e) {
         console.error('Error in applyTimeTheme:', e);
     }
 }
 
 /**
- * Apply seasonal colors to leaf elements
+ * Apply leaf colors to leaf elements
  */
-function applySeasonalLeafColors(colors) {
+function applyLeafColors(colors) {
     if (!colors) return;
     try {
         document.documentElement.style.setProperty('--primary', colors.primary);
         document.documentElement.style.setProperty('--secondary', colors.secondary);
         document.documentElement.style.setProperty('--ternary', colors.ternary);
     } catch (e) {
-        console.error('Error applying seasonal leaf colors:', e);
+        console.error('Error applying leaf colors:', e);
     }
 }
 
 /**
- * Apply seasonal styling to drops (water/petals/snow)
- */
-function applySeasonalDrops(colors, season) {
-    if (!colors || !Array.isArray(colors)) return;
-    try {
-        const drops = document.querySelectorAll('.drop');
-        drops.forEach((drop, index) => {
-            const color = colors[index % colors.length];
-            drop.style.background = color;
-            
-            // Adjust animation for snow (slower fall)
-            if (season === 'winter') {
-                drop.style.animationDuration = `${15 + Math.random() * 10}s`;
-            } else {
-                drop.style.animationDuration = `${7 + Math.random() * 5}s`;
-            }
-        });
-    } catch (e) {
-        console.error('Error applying seasonal drops:', e);
-    }
-}
-
-/**
- * Initialize time-based theming with periodic updates
+ * Initialize time-based theming
  * @param {Object} settings - User settings object
+ * @param {Function} updateCallback - Optional callback to trigger updates
  */
-export function initTimeTheme(settings = {}) {
+export function initTimeTheme(settings = {}, updateCallback = null) {
     try {
-        const manualTimeOfDay = settings.manualTimeOfDay === 'auto' || !settings.manualTimeOfDay ? null : settings.manualTimeOfDay;
+        // Apply theme immediately with slider's current hour
+        const manualHour = settings.manualHour || 12;
         const customWaterColor = settings.customWaterColor || null;
         
-        // Apply theme immediately
-        applyTimeTheme(manualTimeOfDay, customWaterColor);
+        applyTimeTheme(null, customWaterColor, manualHour);
         
-        // Update every 5 minutes to catch time transitions (only if on auto mode)
-        setInterval(() => {
-            try {
-                if (!settings.manualTimeOfDay || settings.manualTimeOfDay === 'auto') {
-                    applyTimeTheme(null, customWaterColor);
-                }
-            } catch (e) {
-                console.error('Error in time theme interval:', e);
-            }
-        }, 5 * 60 * 1000);
+        // Note: No auto-updating interval needed since user controls time via slider
+        // Background only updates when slider moves or "Current Time" button is clicked
     } catch (e) {
         console.error('Error initializing time theme:', e);
     }
+}
+
+/**
+ * Get the current hour as a decimal (for slider position)
+ */
+export function getCurrentHourDecimal() {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const second = now.getSeconds();
+    return hour + minute / 60 + second / 3600;
 }

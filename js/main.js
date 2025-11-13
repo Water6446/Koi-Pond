@@ -7,9 +7,21 @@ import { initWeather } from './Weather.js';
 import { initFeeder, foods as feederFoods, updateFoods, drawFoods } from './Feeder.js';
 import { Ripple } from './Ripple.js';
 import { Dragonfly } from './Dragonfly.js';
-import { initTimeTheme, applyTimeTheme } from './TimeTheme.js';
+import { initTimeTheme, applyTimeTheme, getCurrentHourDecimal } from './TimeTheme.js';
+import {
+    initWidgetManager,
+    applyWidgetStyle,
+    repositionWidgetsFromPercent,
+    initWidgetInteractions,
+    applyAllWidgetSettings,
+    setupWidgetStyleControls,
+    setupGoogleSearchWidget,
+    setupSettingsPanelClickOutside,
+    drawWidgetLilyPad
+} from './WidgetManager.js';
 
-const GRID_SIZE = 40; 
+const GRID_SIZE = 40;
+let autoTimeUpdateInterval = null; // Track the auto-update interval 
 let flowerImage = null;
 let kois = [];
 let particles = [];
@@ -19,9 +31,6 @@ let dragonflies = [];
 let mouse = { x: -1000, y: -1000 };
 let draggedLilly = null;
 let gridOverlay = null;
-let draggedElement = null; 
-let dragOffset = { x: 0, y: 0 };
-let originalRect = { width: 0, height: 0 };
 let isMouseOverControls = false;
 let performanceMode = false;
 let dragonflySpawnTimer = 0;
@@ -64,28 +73,15 @@ const defaultSettings = {
         showCustomAuthor: true,
         customAuthor: null
     },
-    widgetStyle: 'lilypad',
+    widgetStyle: 'glass',
     fishSpeed: 1.0,
     performanceMode: false,
     debugMode: false,
     customBackground: null,
-    manualTimeOfDay: 'auto',
-    customWaterColor: null
+    customWaterColor: null,
+    manualHour: 12,
+    autoFollowTime: false // Track if time should auto-update
 };
-
-/** Apply a widget style variant to all widgets. */
-function applyWidgetStyle(style) {
-    document.querySelectorAll('.widget').forEach(w => {
-        // Remove known style classes and add the requested one
-        w.classList.remove('lilypad', 'glass', 'leaf', 'none');
-        if (style === 'lilypad') w.classList.add('lilypad');
-        else if (style === 'glass') w.classList.add('glass');
-        else if (style === 'leaf') w.classList.add('leaf');
-        else if (style === 'none') w.classList.add('none');
-    });
-    // reflect on body for possible global selectors
-    document.body.dataset.widgetStyle = style;
-}
 
 /**
  * Deep merge two objects. Used to safely combine default and saved settings.
@@ -116,7 +112,7 @@ function saveSettings(newSettings) {
     // Cache critical settings to localStorage for instant loading
     try {
         const cacheData = {
-            manualTimeOfDay: userSettings.manualTimeOfDay,
+            manualHour: userSettings.manualHour,
             customWaterColor: userSettings.customWaterColor,
             widgetPositions: userSettings.widgetPositions,
             widgetSizes: userSettings.widgetSizes,
@@ -245,28 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    /**
-     * Reposition widgets based on stored percentage coordinates so they stay in relative place
-     * when screen size or monitor changes. Snaps to grid.
-     */
-    function repositionWidgetsFromPercent() {
-        const widgets = document.querySelectorAll('.widget');
-        widgets.forEach(widget => {
-            const id = widget.id;
-            const pos = userSettings.widgetPositions && userSettings.widgetPositions[id];
-            if (!pos) return;
-
-            // Prefer percentage coordinates if available
-            if (pos.leftPct !== undefined && pos.topPct !== undefined) {
-                const leftPx = Math.round((pos.leftPct || 0) * window.innerWidth / GRID_SIZE) * GRID_SIZE;
-                const topPx = Math.round((pos.topPct || 0) * window.innerHeight / GRID_SIZE) * GRID_SIZE;
-                widget.style.left = `${leftPx}px`;
-                widget.style.top = `${topPx}px`;
-                widget.style.transform = 'none';
-            }
-        });
-    }
-
     function updateKoisSize(newSize) {
         const currentSize = kois.length;
         if (newSize > currentSize) {
@@ -370,6 +344,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper function to format hour decimal as HH:MM
+    function formatTimeFromHour(hourDecimal) {
+        const hours = Math.floor(hourDecimal);
+        const minutes = Math.floor((hourDecimal - hours) * 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
     // Customize panel button - wrapped in safety check
     try {
         const customizeBtn = document.getElementById('customizeButton');
@@ -386,18 +367,256 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Time of Day radio buttons
-        const timeRadios = document.querySelectorAll('input[name="timeOfDay"]');
-        if (timeRadios.length > 0) {
-            timeRadios.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    const value = e.target.value;
-                    userSettings.manualTimeOfDay = value;
-                    saveSettings({ manualTimeOfDay: value });
-                    applyTimeTheme(
-                        value === 'auto' ? null : value,
-                        userSettings.customWaterColor
-                    );
+        // Time Slider (always visible) - with arc-based sun movement
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const syncButton = document.getElementById('syncToCurrentTime');
+        const timeArcPath = document.getElementById('timeArcPath');
+
+        // Draw the arc path that the sun follows
+        function drawTimeArc() {
+            if (!timeArcPath || !timeSlider) return;
+            
+            // Use SVG viewBox coordinates (0-400 width, 0-100 height)
+            const viewBoxWidth = 400;
+            const viewBoxHeight = 100;
+            const padding = 20; // Horizontal padding
+            const width = viewBoxWidth - padding * 2;
+            
+            // Build SVG path following a semi-circular arc (like a rainbow)
+            let pathData = '';
+            const numPoints = 100;
+            const arcHeight = 35; // Height of the arc in viewBox units
+            const arcBottom = 75; // Y position of arc bottom
+            
+            for (let i = 0; i <= numPoints; i++) {
+                const progress = i / numPoints; // 0 to 1
+                const x = padding + progress * width;
+                
+                // Semi-circular arc: use only 0 to π (top half of sine wave)
+                // At progress 0 (midnight): arc is at bottom (y = arcBottom)
+                // At progress 0.5 (noon): arc is at top (y = arcBottom - arcHeight)
+                // At progress 1 (midnight): arc is at bottom again (y = arcBottom)
+                const arcProgress = progress * Math.PI; // 0 to π (only top half)
+                const y = arcBottom - Math.sin(arcProgress) * arcHeight;
+                
+                if (i === 0) {
+                    pathData = `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            }
+            
+            timeArcPath.setAttribute('d', pathData);
+            
+            // Also apply to border
+            const timeArcBorder = document.getElementById('timeArcBorder');
+            if (timeArcBorder) {
+                timeArcBorder.setAttribute('d', pathData);
+            }
+        }
+
+        // Position sun thumb along arc path based on slider value
+        // Make it a window function so it's accessible from applyAllSettings
+        window.updateSunPosition = function() {
+            if (!timeSlider) return;
+            
+            const hour = parseFloat(timeSlider.value);
+            const progress = hour / 24; // 0 to 1
+            
+            // Calculate Y offset to create semi-circular arc effect
+            // At midnight (0 or 24): sun is at bottom (offset = 0)
+            // At noon (12): sun is at top (offset = -35px)
+            const arcProgress = progress * Math.PI; // 0 to π (only top half)
+            const arcHeight = 35; // Match drawTimeArc (in pixels for CSS)
+            const verticalOffset = -Math.sin(arcProgress) * arcHeight;
+            
+            // Apply vertical offset via CSS custom property
+            timeSlider.style.setProperty('--sun-y-offset', `${verticalOffset}px`);
+        };
+
+        // Initialize arc on load and on window resize
+        if (timeArcPath) {
+            drawTimeArc();
+            window.addEventListener('resize', drawTimeArc);
+        }
+
+        if (timeSlider && timeDisplay) {
+            // Update display, background, and sun position as slider moves
+            timeSlider.addEventListener('input', (e) => {
+                const hour = parseFloat(e.target.value);
+                timeDisplay.textContent = formatTimeFromHour(hour);
+                window.updateSunPosition();
+                
+                // Always update background in real-time
+                applyTimeTheme(null, userSettings.customWaterColor, hour);
+            });
+
+            // When slider is released, disable auto-follow and save manual time
+            timeSlider.addEventListener('change', (e) => {
+                const hour = parseFloat(e.target.value);
+                
+                // Stop auto-following time
+                if (autoTimeUpdateInterval) {
+                    clearInterval(autoTimeUpdateInterval);
+                    autoTimeUpdateInterval = null;
+                }
+                
+                userSettings.manualHour = hour;
+                userSettings.autoFollowTime = false;
+                saveSettings({ manualHour: hour, autoFollowTime: false });
+            });
+            
+            // Initialize sun position
+            window.updateSunPosition();
+        }
+
+        // Sync to current system time button - enables auto-follow mode
+        if (syncButton && timeSlider) {
+            syncButton.addEventListener('click', () => {
+                // Enable auto-follow mode
+                userSettings.autoFollowTime = true;
+                saveSettings({ autoFollowTime: true });
+                
+                // Update immediately
+                updateToCurrentTime();
+                
+                // Start auto-update interval (update every second for smooth transitions)
+                if (autoTimeUpdateInterval) {
+                    clearInterval(autoTimeUpdateInterval);
+                }
+                autoTimeUpdateInterval = setInterval(() => {
+                    if (userSettings.autoFollowTime) {
+                        updateToCurrentTime();
+                    }
+                }, 1000); // Update every second
+                
+                // Visual feedback
+                syncButton.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    syncButton.style.transform = '';
+                }, 150);
+            });
+        }
+        
+        // Helper function to update to current system time
+        function updateToCurrentTime() {
+            const currentHour = getCurrentHourDecimal();
+            
+            timeSlider.value = currentHour;
+            timeDisplay.textContent = formatTimeFromHour(currentHour);
+            window.updateSunPosition();
+            
+            // Update background
+            applyTimeTheme(null, userSettings.customWaterColor, currentHour);
+            
+            // Save current hour
+            userSettings.manualHour = currentHour;
+        }
+        
+        // Make time display clickable for manual time input
+        if (timeDisplay && timeSlider) {
+            timeDisplay.addEventListener('click', () => {
+                // Create input element
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = timeDisplay.textContent;
+                input.style.cssText = 'background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 215, 0, 0.4); color: rgba(255, 255, 255, 0.95); font-size: 20px; font-weight: 600; letter-spacing: 1.5px; font-family: "Courier New", monospace; padding: 6px 12px; border-radius: 6px; width: 100px; text-align: center; outline: none;';
+                
+                // Replace display with input
+                const originalText = timeDisplay.textContent;
+                timeDisplay.textContent = '';
+                timeDisplay.appendChild(input);
+                input.focus();
+                input.select();
+                
+                // Function to parse time input (supports formats like "14:30", "2:30 PM", "14.5")
+                const parseTimeInput = (str) => {
+                    str = str.trim().toUpperCase();
+                    
+                    // Check for AM/PM format (e.g., "2:30 PM")
+                    const ampmMatch = str.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)/);
+                    if (ampmMatch) {
+                        let hours = parseInt(ampmMatch[1]);
+                        const minutes = parseInt(ampmMatch[2] || '0');
+                        const period = ampmMatch[3];
+                        
+                        if (period === 'PM' && hours !== 12) hours += 12;
+                        if (period === 'AM' && hours === 12) hours = 0;
+                        
+                        return hours + minutes / 60;
+                    }
+                    
+                    // Check for 24-hour format (e.g., "14:30")
+                    const colonMatch = str.match(/(\d{1,2}):(\d{2})/);
+                    if (colonMatch) {
+                        const hours = parseInt(colonMatch[1]);
+                        const minutes = parseInt(colonMatch[2]);
+                        return hours + minutes / 60;
+                    }
+                    
+                    // Check for decimal format (e.g., "14.5")
+                    const decimal = parseFloat(str);
+                    if (!isNaN(decimal)) {
+                        return decimal;
+                    }
+                    
+                    return null;
+                };
+                
+                // Function to apply the new time
+                const applyTime = () => {
+                    const newHour = parseTimeInput(input.value);
+                    
+                    if (newHour !== null && newHour >= 0 && newHour <= 24) {
+                        // Stop auto-follow mode
+                        if (autoTimeUpdateInterval) {
+                            clearInterval(autoTimeUpdateInterval);
+                            autoTimeUpdateInterval = null;
+                        }
+                        
+                        // Update slider and display
+                        timeSlider.value = newHour;
+                        timeDisplay.textContent = formatTimeFromHour(newHour);
+                        window.updateSunPosition();
+                        
+                        // Update background
+                        applyTimeTheme(null, userSettings.customWaterColor, newHour);
+                        
+                        // Save settings
+                        userSettings.manualHour = newHour;
+                        userSettings.autoFollowTime = false;
+                        saveSettings({ manualHour: newHour, autoFollowTime: false });
+                    } else {
+                        // Invalid input - restore original
+                        timeDisplay.textContent = originalText;
+                    }
+                    
+                    // Remove input if it still exists
+                    if (input.parentNode === timeDisplay) {
+                        timeDisplay.removeChild(input);
+                    }
+                };
+                
+                // Handle Enter key
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyTime();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        timeDisplay.textContent = originalText;
+                        if (input.parentNode === timeDisplay) {
+                            timeDisplay.removeChild(input);
+                        }
+                    }
+                });
+                
+                // Handle blur (clicking away)
+                input.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        applyTime();
+                    }, 100);
                 });
             });
         }
@@ -571,70 +790,6 @@ document.addEventListener('DOMContentLoaded', () => {
             draggedLilly = null;
         }
     });
-    
-    /**
-     * Draws a cute lily pad backdrop for a widget - OPTIMIZED (simplified rendering)
-     * @param {CanvasRenderingContext2D} ctx - Canvas context
-     * @param {DOMRect} rect - Widget bounding rectangle
-     * @param {Object} options - Drawing options (padScale, hasFlower, isWidgetPad)
-     */
-    function drawWidgetLilyPad(ctx, rect, options = {}) {
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        const padRadius = Math.max(rect.width, rect.height) * (options.padScale || 0.6);
-
-        // Simplified shadow - no blur (expensive operation)
-        ctx.save();
-        ctx.fillStyle = 'rgba(27, 94, 32, 0.2)';
-        ctx.beginPath();
-        ctx.arc(x + padRadius * 0.06, y + padRadius * 0.08, padRadius * 0.98, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // Main pad - simpler gradient (fewer color stops)
-        ctx.save();
-        const gradient = ctx.createRadialGradient(
-            x - padRadius * 0.2, y - padRadius * 0.2, padRadius * 0.1,
-            x, y, padRadius
-        );
-        gradient.addColorStop(0, '#6ec947');  // Lighter center
-        gradient.addColorStop(1, '#4a9d44');   // Darker edge
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x, y, padRadius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // Optional simple flower (reduced detail)
-        if (options.hasFlower) {
-            ctx.save();
-            const flowerX = x + padRadius * 0.45;
-            const flowerY = y + padRadius * 0.45;
-            
-            // Pink petals - reduced from 5 to 4
-            ctx.fillStyle = '#e91e63';
-            const petalClusterRadius = padRadius * 0.12;
-            const petalRadius = petalClusterRadius * 1.0;
-            for (let i = 0; i < 4; i++) {
-                const angle = (i / 4) * Math.PI * 2;
-                ctx.beginPath();
-                ctx.arc(
-                    flowerX + Math.cos(angle) * petalClusterRadius,
-                    flowerY + Math.sin(angle) * petalClusterRadius,
-                    petalRadius,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fill();
-            }
-            // Yellow center
-            ctx.fillStyle = '#ffeb39';
-            ctx.beginPath();
-            ctx.arc(flowerX, flowerY, padRadius * 0.1, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-    }
 
     let lastTime = 0;
     let frameCount = 0;
@@ -938,211 +1093,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (debugRippleCount) debugRippleCount.textContent = `Ripples: ${ripples.length}`;
     }
     
-    // --- Widget Drag & Resize & Settings Logic ---
-
-    /**
-     * Initializes all widgets: dragging, resizing, toggles, and settings panels.
-     */
-    function initWidgetInteractions() {
-        // 1. Widget Drag/Resize
-        document.querySelectorAll('.widget').forEach(widget => {
-            widget.addEventListener('mousedown', onWidgetMouseDown);
-        });
-
-        // 2. Control Panel Toggles
-        document.querySelectorAll('.widget-toggle').forEach(toggle => {
-            toggle.addEventListener('change', onWidgetToggleChange);
-        });
-
-        // 3. Control Panel Settings Buttons
-        document.querySelectorAll('.settings-trigger').forEach(button => {
-            button.addEventListener('click', onSettingsTriggerClick);
-        });
-
-        // 4. Settings Panel "Done" Buttons
-        document.querySelectorAll('.settings-done-button').forEach(button => {
-            button.addEventListener('click', onSettingsDoneClick);
-        });
-
-        // 5. Prevent settings panels from triggering a drag
-        document.querySelectorAll('.controls-settings-panel').forEach(panel => {
-            panel.addEventListener('mousedown', (e) => e.stopPropagation());
-        });
-    }
-
-    /**
-     * Handles 'mousedown' on a widget. Starts either dragging or resizing.
-     */
-    function onWidgetMouseDown(e) {
-        const widget = e.currentTarget;
-
-        // If the user clicked an interactive control inside the widget (input, textarea, select, button, link,
-        // or the search form), don't start dragging/resizing — let the control handle the event.
-        const interactiveSelector = 'input, textarea, select, button, a, label, .google-search-form, .settings-trigger';
-        if (e.target.closest && e.target.closest(interactiveSelector)) {
-            return; // allow normal interaction
-        }
-
-    // --- Check for invisible resize corner ---
-    const rect = widget.getBoundingClientRect();
-    const resizeHandleSize = 20; // Size of the invisible bottom-right corner
-    // Prefer an explicit hit on the resize handle element if present (more reliable across styles)
-    const clickedResizeHandle = e.target.closest && e.target.closest('.resize-handle');
-    const isResizeClick = clickedResizeHandle || (e.clientX > rect.right - resizeHandleSize && 
-                   e.clientY > rect.bottom - resizeHandleSize);
-        
-        e.preventDefault();
-        draggedElement = widget; 
-        gridOverlay.style.display = 'block';
-
-        if (isResizeClick) {
-            // --- Start RESIZING ---
-            draggedElement.dataset.mode = 'resize'; 
-            originalRect.width = rect.width;
-            originalRect.height = rect.height;
-            dragOffset.x = e.clientX - rect.width;
-            dragOffset.y = e.clientY - rect.height;
-
-        } else {
-            // --- Start DRAGGING ---
-            draggedElement.dataset.mode = 'drag'; 
-            
-            // Get the current rendered position BEFORE clearing transform
-            // (rect already accounts for any transforms)
-            const currentLeft = rect.left;
-            const currentTop = rect.top;
-            
-            // Clear any transforms (translateX, rotate, etc.)
-            widget.style.transform = 'none';
-            
-            // Set position to where it was visually rendered
-            widget.style.left = `${currentLeft}px`;
-            widget.style.top = `${currentTop}px`;
-            
-            // Now calculate offset for dragging from current mouse position
-            dragOffset.x = e.clientX - currentLeft;
-            dragOffset.y = e.clientY - currentTop;
-        }
-        
-        widget.classList.add('dragging');
-        document.addEventListener('mousemove', onDocumentMouseMove);
-        document.addEventListener('mouseup', onDocumentMouseUp);
-    }
-
-    /**
-     * Handles 'mousemove' for both dragging and resizing.
-     */
-    const snapToGrid = value => Math.round(value / GRID_SIZE) * GRID_SIZE;
-    
-    function onDocumentMouseMove(e) {
-        if (!draggedElement) return;
-
-        if (draggedElement.dataset.mode === 'resize') {
-            const newWidth = e.clientX - dragOffset.x;
-            const newHeight = e.clientY - dragOffset.y;
-            const snappedWidth = Math.max(GRID_SIZE * 4, snapToGrid(newWidth));
-            const snappedHeight = Math.max(GRID_SIZE * 2, snapToGrid(newHeight));
-
-            draggedElement.style.width = `${snappedWidth}px`;
-            draggedElement.style.height = `${snappedHeight}px`;
-            draggedElement.style.setProperty('--widget-height-px', `${snappedHeight}px`);
-
-        } else if (draggedElement.dataset.mode === 'drag') {
-            const newLeft = e.clientX - dragOffset.x;
-            const newTop = e.clientY - dragOffset.y;
-            draggedElement.style.left = `${snapToGrid(newLeft)}px`;
-            draggedElement.style.top = `${snapToGrid(newTop)}px`;
-        }
-    }
-
-    /**
-     * Handles 'mouseup' to end dragging or resizing.
-     */
-    function onDocumentMouseUp() {
-        if (!draggedElement) return;
-
-        gridOverlay.style.display = 'none';
-        draggedElement.classList.remove('dragging');
-
-        // Save the new state
-        if (draggedElement.dataset.mode === 'resize') {
-            userSettings.widgetSizes[draggedElement.id] = {
-                width: draggedElement.style.width,
-                height: draggedElement.style.height
-            };
-            saveSettings({ widgetSizes: userSettings.widgetSizes });
-
-        } else if (draggedElement.dataset.mode === 'drag') {
-            // Save both pixel and percentage positions so we can reposition across monitors
-            const id = draggedElement.id;
-            const leftPx = parseFloat(draggedElement.style.left) || 0;
-            const topPx = parseFloat(draggedElement.style.top) || 0;
-            const leftPct = window.innerWidth > 0 ? leftPx / window.innerWidth : 0;
-            const topPct = window.innerHeight > 0 ? topPx / window.innerHeight : 0;
-
-            userSettings.widgetPositions[id] = {
-                top: `${topPx}px`,
-                left: `${leftPx}px`,
-                leftPct: leftPct,
-                topPct: topPct
-            };
-            saveSettings({ widgetPositions: userSettings.widgetPositions });
-        }
-
-        draggedElement.dataset.mode = '';
-        draggedElement = null;
-        document.removeEventListener('mousemove', onDocumentMouseMove);
-        document.removeEventListener('mouseup', onDocumentMouseUp);
-    }
-
-    /**
-     * Handles 'change' on the main control toggles.
-     */
-    function onWidgetToggleChange(e) {
-        const toggle = e.currentTarget;
-        const widgetId = toggle.dataset.widgetId;
-        const widget = document.getElementById(widgetId);
-        const isVisible = toggle.checked;
-
-        if (widget) {
-            widget.style.display = isVisible ? 'block' : 'none';
-            userSettings.widgetVisibility[widgetId] = isVisible;
-            saveSettings({ widgetVisibility: userSettings.widgetVisibility });
-        }
-    }
-
-    /**
-     * Handles clicks on "Settings" buttons in the controls.
-     */
-    function onSettingsTriggerClick(e) {
-        const panelId = e.currentTarget.dataset.panelId;
-        const clickedPanel = document.getElementById(panelId);
-        
-        // Close all other panels first
-        document.querySelectorAll('.controls-settings-panel').forEach(panel => {
-            if (panel.id !== panelId) {
-                panel.style.display = 'none';
-            }
-        });
-
-        // Toggle the clicked panel
-        if (clickedPanel) {
-            clickedPanel.style.display = clickedPanel.style.display === 'block' ? 'none' : 'block';
-        }
-    }
-
-    /**
-     * Handles clicks on "Done" buttons in the settings panels.
-     */
-    function onSettingsDoneClick(e) {
-        const panelId = e.currentTarget.dataset.panelId;
-        const panel = document.getElementById(panelId);
-        if (panel) {
-            panel.style.display = 'none';
-        }
-    }
-
-
     // --- Initialization ---
     
     /**
@@ -1179,49 +1129,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize time-based theming with user settings (no season)
+    // Initialize time-based theming with user settings
     initTimeTheme(userSettings);
+    
+    // If auto-follow mode was enabled, start the update interval
+    if (userSettings.autoFollowTime) {
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        
+        if (timeSlider && timeDisplay) {
+            // Update immediately
+            const updateToCurrentTime = () => {
+                const currentHour = getCurrentHourDecimal();
+                timeSlider.value = currentHour;
+                timeDisplay.textContent = formatTimeFromHour(currentHour);
+                if (typeof window.updateSunPosition === 'function') {
+                    window.updateSunPosition();
+                }
+                applyTimeTheme(null, userSettings.customWaterColor, currentHour);
+                userSettings.manualHour = currentHour;
+            };
+            
+            updateToCurrentTime();
+            
+            // Start interval
+            if (autoTimeUpdateInterval) {
+                clearInterval(autoTimeUpdateInterval);
+            }
+            autoTimeUpdateInterval = setInterval(() => {
+                if (userSettings.autoFollowTime) {
+                    updateToCurrentTime();
+                }
+            }, 1000);
+        }
+    }
 
     // Set up all user interactions
     initWidgetInteractions();
 
-    // Apply widget style from settings
-    const currentStyle = userSettings.widgetStyle || defaultSettings.widgetStyle;
-    applyWidgetStyle(currentStyle);
-    
-    // Set the checked state for the widget style radio buttons
-    const styleRadios = document.querySelectorAll('input[name="widgetStyle"]');
-    styleRadios.forEach(radio => {
-        if (radio.value === currentStyle) {
-            radio.checked = true;
-        }
-        radio.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                const style = e.target.value;
-                userSettings.widgetStyle = style;
-                saveSettings({ widgetStyle: style });
-                applyWidgetStyle(style);
-            }
-        });
-    });
+    // Apply widget style from settings and set up controls
+    setupWidgetStyleControls(defaultSettings);
 
-    // Google Search widget: wire up form submit to open Google results in a new tab
-    const searchForm = document.getElementById('google-search-form');
-    const searchInput = document.getElementById('google-search-input');
-    if (searchForm && searchInput) {
-        searchForm.addEventListener('submit', (ev) => {
-            ev.preventDefault();
-            const q = searchInput.value.trim();
-            if (!q) return;
-            const url = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-            // Open results in the same tab (user requested behavior)
-            window.location.href = url;
-        });
-        // Prevent mousedown on the input or button from bubbling up to the widget drag handler
-        searchInput.addEventListener('mousedown', (ev) => ev.stopPropagation());
-        searchInput.addEventListener('click', (ev) => ev.stopPropagation());
-        // No submit button present (search opens on Enter), only block mousedown on the input
-    }
+    // Google Search widget setup
+    setupGoogleSearchWidget();
     }
 
     /**
@@ -1241,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Cache settings to localStorage for instant next load
                 try {
                     const cacheData = {
-                        manualTimeOfDay: userSettings.manualTimeOfDay,
+                        manualHour: userSettings.manualHour,
                         customWaterColor: userSettings.customWaterColor,
                         widgetPositions: userSettings.widgetPositions,
                         widgetSizes: userSettings.widgetSizes,
@@ -1266,55 +1216,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Applies all loaded settings to the DOM elements.
      */
     function applyAllSettings() {
-        document.querySelectorAll('.widget').forEach(widget => {
-            const id = widget.id;
-
-            // 1. Apply Position
-            const pos = userSettings.widgetPositions[id];
-            if (pos) {
-                // If percentage values are stored, compute pixel positions using current window size and snap to grid
-                if (pos.leftPct !== undefined && pos.topPct !== undefined) {
-                    const leftPx = Math.round((pos.leftPct || 0) * window.innerWidth / GRID_SIZE) * GRID_SIZE;
-                    const topPx = Math.round((pos.topPct || 0) * window.innerHeight / GRID_SIZE) * GRID_SIZE;
-                    widget.style.left = `${leftPx}px`;
-                    widget.style.top = `${topPx}px`;
-                    widget.style.transform = 'none';
-                } else if (pos.top && pos.left) {
-                    widget.style.top = pos.top;
-                    widget.style.left = pos.left;
-                    widget.style.transform = 'none';
-                }
-            }
-
-            // 2. Apply Size
-            const size = userSettings.widgetSizes[id];
-            if (size && size.width && size.height) {
-                widget.style.width = size.width;
-                widget.style.height = size.height;
-                // Apply height to CSS var for font scaling
-                widget.style.setProperty('--widget-height-px', `${parseFloat(size.height)}px`);
-            } else {
-                // Apply default if not set
-                const defaultSize = defaultSettings.widgetSizes[id];
-                 if (defaultSize) {
-                    widget.style.setProperty('--widget-height-px', `${parseFloat(defaultSize.height)}px`);
-                 }
-            }
-
-            // 3. Apply Visibility
-            const isVisible = userSettings.widgetVisibility[id];
-            const toggle = document.querySelector(`.widget-toggle[data-widget-id="${id}"]`);
-            
-            if (isVisible) {
-                widget.style.display = 'block';
-                if (toggle) toggle.checked = true;
-            } else {
-                widget.style.display = 'none';
-                if (toggle) toggle.checked = false;
-            }
-        });
-        // Apply style (in case settings were loaded)
-        applyWidgetStyle(userSettings.widgetStyle || defaultSettings.widgetStyle);
+        // Initialize the widget manager first with settings
+        initWidgetManager(userSettings, saveSettings, gridOverlay);
+        
+        // Apply widget settings using the widget manager
+        applyAllWidgetSettings(defaultSettings);
         
         // Apply performance mode
         performanceMode = userSettings.performanceMode || false;
@@ -1332,16 +1238,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Apply customize panel settings
-        const timeOfDayValue = userSettings.manualTimeOfDay || 'auto';
+        const manualHour = userSettings.manualHour || 12;
         const waterColor = userSettings.customWaterColor;
         
-        // Set time of day radio button
-        const timeRadioId = timeOfDayValue === 'auto' ? 'timeAuto' : 
-                           timeOfDayValue === 'dawn' ? 'timeDawn' :
-                           timeOfDayValue === 'day' ? 'timeDay' :
-                           timeOfDayValue === 'dusk' ? 'timeDusk' : 'timeNight';
-        const timeRadio = document.getElementById(timeRadioId);
-        if (timeRadio) timeRadio.checked = true;
+        // Set slider value and display (slider is always visible now)
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        if (timeSlider && timeDisplay) {
+            timeSlider.value = manualHour;
+            timeDisplay.textContent = formatTimeFromHour(manualHour);
+            // Update sun position on load
+            if (typeof window.updateSunPosition === 'function') {
+                window.updateSunPosition();
+            }
+        }
         
         // Set water color picker
         const colorPicker = document.getElementById('waterColorPicker');
@@ -1349,24 +1259,19 @@ document.addEventListener('DOMContentLoaded', () => {
             colorPicker.value = waterColor;
         }
         
-        // Apply theme with saved settings
-        applyTimeTheme(
-            timeOfDayValue === 'auto' ? null : timeOfDayValue,
-            waterColor
-        );
+        // Apply theme with saved slider position
+        applyTimeTheme(null, waterColor, manualHour);
     }
 
-    // Close settings panels when clicking outside
-    document.addEventListener('click', (e) => {
-        // If click is not inside a settings panel, settings trigger, or customize button
-        if (!e.target.closest('.controls-settings-panel') && 
-            !e.target.closest('.settings-trigger') &&
-            !e.target.closest('#customizeButton')) {
-            document.querySelectorAll('.controls-settings-panel').forEach(panel => {
-                panel.style.display = 'none';
-            });
-        }
-    });
+    // Helper function to format hour decimal as HH:MM (defined earlier, but ensure it's accessible)
+    function formatTimeFromHour(hourDecimal) {
+        const hours = Math.floor(hourDecimal);
+        const minutes = Math.floor((hourDecimal - hours) * 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    // Close settings panels when clicking outside (using WidgetManager)
+    setupSettingsPanelClickOutside();
 
     // --- LOADING SEQUENCE ---
     

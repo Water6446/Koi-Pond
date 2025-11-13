@@ -8,15 +8,7 @@ export const localQuotes = [
     },
     {
         text: "How you do anything is how you do everything.",
-        author: "Buddha"
-    },
-    {
-        text: "Simplicity is the ultimate sophistication.",
-        author: "Leonardo da Vinci"
-    },
-    {
-        text: "It is not in the stars to hold our destiny but in ourselves.",
-        author: "William Shakespeare"
+        author: "Unknown"
     },
     {
         text: "What we think, we become.",
@@ -29,5 +21,33 @@ export const localQuotes = [
     {
         text: "One pre-dinner drink equals three post-dinner drinks.",
         author: "Sean Lendrum"
+    },
+    {
+        text: "Whether you do it or not, the time will pass",
+        author: "Edward Fitzgerald"
+    },
+    {
+        text: "Do hard things",
+        author: "Unknown"
+    },
+    {
+        text: "Stop watering dead flowers",
+        author: "Unknown"
+    },
+    {
+        text: "Worry never robs tomorrow of it's sorrow, it only saps today of its joy",
+        author: "Leo Buscaglia"
+    },
+    {
+        text: "The windshield is bigger than the review mirror for a reason",
+        author: "Cody Alan"
+    },
+    {
+        text: "Don't think there are no crocodiles because the water is calm",
+        author: "African Proverb"
+    },
+    {
+        text: "You can have excuses or results not both",
+        author: "Arnold Schwarzenegger"
     }
 ];
