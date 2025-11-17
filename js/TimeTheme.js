@@ -130,11 +130,11 @@ function easeInOutSine(t) {
  */
 const colorKeyframes = [
     { hour: 0, bgColor: '#0D1B2A', waterTint: 'rgba(15, 25, 45, 0.3)', leafColors: { primary: '#2C3E50', secondary: '#34495E', ternary: '#415A77' } }, // Midnight - Deep blue night
-    { hour: 4, bgColor: '#1B263B', waterTint: 'rgba(25, 35, 60, 0.28)', leafColors: { primary: '#34495E', secondary: '#415A77', ternary: '#4A6FA5' } }, // Deep night
-    { hour: 5, bgColor: '#151C33', waterTint: 'rgba(21, 28, 51, 0.26)', leafColors: { primary: '#2B374F', secondary: '#33405A', ternary: '#3C4A66' } }, // Pre-dawn deep navy
+    { hour: 4, bgColor: '#151C33', waterTint: 'rgba(25, 35, 60, 0.28)', leafColors: { primary: '#34495E', secondary: '#415A77', ternary: '#4A6FA5' } }, // Deep night
+    { hour: 5, bgColor: '#1B263B', waterTint: 'rgba(21, 28, 51, 0.26)', leafColors: { primary: '#2B374F', secondary: '#33405A', ternary: '#3C4A66' } }, // Pre-dawn deep navy
     { hour: 6, bgColor: '#3D2B47', waterTint: 'rgba(61, 43, 71, 0.24)', leafColors: { primary: '#4A3850', secondary: '#544058', ternary: '#5E4860' } }, // Early dawn dark violet
     { hour: 7, bgColor: '#5B4A55', waterTint: 'rgba(91, 74, 85, 0.22)', leafColors: { primary: '#6B5A64', secondary: '#75646D', ternary: '#7F6E76' } }, // Sunrise dark dusty purple-gray
-    { hour: 8, bgColor: '#735E52', waterTint: 'rgba(115, 94, 82, 0.2)', leafColors: { primary: '#826D5F', secondary: '#8C7768', ternary: '#968171' } }, // Warm dull taupe
+    { hour: 8, bgColor: '#5A5968', waterTint: 'rgba(90, 89, 104, 0.2)', leafColors: { primary: '#6A6877', secondary: '#747280', ternary: '#7E7C89' } }, // Purple-blue-gray blend
     { hour: 9, bgColor: '#5D6F7A', waterTint: 'rgba(93, 111, 122, 0.16)', leafColors: { primary: '#6E8667', secondary: '#789170', ternary: '#829C79' } }, // Blue-gray transition to day
     { hour: 10, bgColor: '#3A7CA5', waterTint: 'rgba(140, 190, 230, 0.08)', leafColors: { primary: '#7AAA44', secondary: '#88BB33', ternary: '#95CC22' } }, // Mid-morning - clear blue
     { hour: 12, bgColor: '#2E6A8F', waterTint: 'rgba(120, 180, 225, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Noon - deep clear blue
@@ -260,7 +260,7 @@ function applyLeafColors(colors) {
 export function initTimeTheme(settings = {}, updateCallback = null) {
     try {
         // Apply theme immediately with slider's current hour
-        const manualHour = settings.manualHour || 12;
+        const manualHour = settings.manualHour !== undefined ? settings.manualHour : 12;
         const customWaterColor = settings.customWaterColor || null;
         
         applyTimeTheme(null, customWaterColor, manualHour);

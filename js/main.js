@@ -459,19 +459,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeDisplay.textContent = formatTimeFromHour(hour);
                 window.updateSunPosition();
                 
-                // Always update background in real-time
-                applyTimeTheme(null, userSettings.customWaterColor, hour);
-            });
-
-            // When slider is released, disable auto-follow and save manual time
-            timeSlider.addEventListener('change', (e) => {
-                const hour = parseFloat(e.target.value);
-                
-                // Stop auto-following time
+                // Stop auto-following immediately when user starts dragging
                 if (autoTimeUpdateInterval) {
                     clearInterval(autoTimeUpdateInterval);
                     autoTimeUpdateInterval = null;
                 }
+                userSettings.autoFollowTime = false;
+                
+                // Always update background in real-time
+                applyTimeTheme(null, userSettings.customWaterColor, hour);
+            });
+
+            // When slider is released, save manual time
+            timeSlider.addEventListener('change', (e) => {
+                const hour = parseFloat(e.target.value);
                 
                 userSettings.manualHour = hour;
                 userSettings.autoFollowTime = false;
@@ -1271,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Apply customize panel settings
-        const manualHour = userSettings.manualHour || 12;
+        const manualHour = userSettings.manualHour !== undefined ? userSettings.manualHour : 12;
         const waterColor = userSettings.customWaterColor;
         
         // Set slider value and display (slider is always visible now)
