@@ -1298,8 +1298,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to format hour decimal as HH:MM (defined earlier, but ensure it's accessible)
     function formatTimeFromHour(hourDecimal) {
-        const hours = Math.floor(hourDecimal);
-        const minutes = Math.round((hourDecimal - hours) * 60); // Use Math.round to handle floating point precision
+        // Wrap hour to 0-23.999 range to prevent 24:00 display
+        let wrappedHour = hourDecimal;
+        while (wrappedHour >= 24) wrappedHour -= 24;
+        while (wrappedHour < 0) wrappedHour += 24;
+        
+        const hours = Math.floor(wrappedHour);
+        const minutes = Math.round((wrappedHour - hours) * 60); // Use Math.round to handle floating point precision
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 

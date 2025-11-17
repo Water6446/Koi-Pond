@@ -35,7 +35,7 @@ export const config = {
         stdDevSize: 10.0,
         minSize: 20,
         colorBody: '#3a5e2a',
-        colorBodyAlt: '#448844',
+        colorBodyAlt: '#4a9650',
         spawnChanceFlower: 0.25,
         spawnChanceSemiPad: 0.35
     },
@@ -57,11 +57,11 @@ export const config = {
     },
 
     koiTrail: {
-        spawnRate: 0.05, // Spawn more frequently for visible trail
-        minLifespan: 0.8,
-        maxLifespan: 1.2, // Longer lifespan
-        minSize: 2,
-        maxSize: 4, // Larger particles
+        spawnRate: 0.1, // Spawn more frequently for visible trail
+        minLifespan: 1.5,
+        maxLifespan: 4, // Longer lifespan
+        minSize: 3,
+        maxSize: 6, // Larger particles
         jitter: 5,
         drift: 15,
         color: 'rgba(220, 240, 255,',
