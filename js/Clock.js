@@ -33,9 +33,6 @@ export function initClock() {
     const clockElement = document.getElementById('clock-display');
     const formatRadios = document.getElementsByName('timeFormat');
     const timezoneSelect = document.getElementById('timezoneSelect');
-    
-    console.log("initClock called");
-    console.log("clockElement:", clockElement);
 
     if (!clockElement) {
         console.error("Clock element not found!");
@@ -47,7 +44,6 @@ export function initClock() {
         const now = getTimeInTimezone(clockSettings.timezone);
         const timeString = formatTime(now, clockSettings.format);
         clockElement.textContent = timeString;
-        console.log("Clock updated:", timeString);
     }
 
     // Call updateTime immediately, don't wait for storage
@@ -58,7 +54,6 @@ export function initClock() {
         chrome.storage.local.get(['clockSettings'], (result) => {
             if (result.clockSettings) {
                 clockSettings = result.clockSettings;
-                console.log("Loaded clock settings:", clockSettings);
                 // Update UI to match saved settings
                 const formatElement = document.getElementById(`format${clockSettings.format}h`);
                 if (formatElement) {

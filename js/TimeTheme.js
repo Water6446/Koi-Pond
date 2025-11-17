@@ -136,10 +136,10 @@ const colorKeyframes = [
     { hour: 7, bgColor: '#5B4A55', waterTint: 'rgba(91, 74, 85, 0.22)', leafColors: { primary: '#6B5A64', secondary: '#75646D', ternary: '#7F6E76' } }, // Sunrise dark dusty purple-gray
     { hour: 8, bgColor: '#5A5968', waterTint: 'rgba(90, 89, 104, 0.2)', leafColors: { primary: '#6A6877', secondary: '#747280', ternary: '#7E7C89' } }, // Purple-blue-gray blend
     { hour: 9, bgColor: '#5D6F7A', waterTint: 'rgba(93, 111, 122, 0.16)', leafColors: { primary: '#6E8667', secondary: '#789170', ternary: '#829C79' } }, // Blue-gray transition to day
-    { hour: 10, bgColor: '#3A7CA5', waterTint: 'rgba(140, 190, 230, 0.08)', leafColors: { primary: '#7AAA44', secondary: '#88BB33', ternary: '#95CC22' } }, // Mid-morning - clear blue
-    { hour: 12, bgColor: '#2E6A8F', waterTint: 'rgba(120, 180, 225, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Noon - deep clear blue
-    { hour: 14, bgColor: '#2E6A8F', waterTint: 'rgba(120, 180, 225, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Afternoon - same as noon
-    { hour: 16, bgColor: '#2F4E6B', waterTint: 'rgba(47, 78, 107, 0.12)', leafColors: { primary: '#5A6F42', secondary: '#647A4C', ternary: '#6E8556' } }, // Late afternoon - darker muted blue
+    { hour: 10, bgColor: '#2B6A70', waterTint: 'rgba(110, 170, 175, 0.08)', leafColors: { primary: '#7AAA44', secondary: '#88BB33', ternary: '#95CC22' } }, // Mid-morning - teal
+    { hour: 12, bgColor: '#1F5C63', waterTint: 'rgba(95, 155, 165, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Noon - deeper teal
+    { hour: 14, bgColor: '#1F5C63', waterTint: 'rgba(95, 155, 165, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Afternoon - same as noon
+    { hour: 16, bgColor: '#2A5560', waterTint: 'rgba(85, 145, 155, 0.1)', leafColors: { primary: '#5A6F42', secondary: '#647A4C', ternary: '#6E8556' } }, // Late afternoon - darker teal
     { hour: 17, bgColor: '#3E4F66', waterTint: 'rgba(62, 79, 102, 0.14)', leafColors: { primary: '#766646', secondary: '#807050', ternary: '#8A7A5A' } }, // Golden hour dark blue-gray
     { hour: 18, bgColor: '#7A5559', waterTint: 'rgba(122, 85, 89, 0.18)', leafColors: { primary: '#836165', secondary: '#8D6B6E', ternary: '#977578' } }, // Sunset dark dusty rose
     { hour: 19, bgColor: '#6B4856', waterTint: 'rgba(107, 72, 86, 0.2)', leafColors: { primary: '#785462', secondary: '#82606C', ternary: '#8C6C76' } }, // Sunset dark muted mauve

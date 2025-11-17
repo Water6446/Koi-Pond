@@ -3,6 +3,8 @@
   "name": "Koi Pond New Tab",
   "version": "1.0.1",
   "description": "Cute Koi Fish swimming in a pond on your new tab page.",
+  "author": "Maximilian Jansen",
+  "homepage_url": "https://github.com/Water6446/Koi-Pond",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
