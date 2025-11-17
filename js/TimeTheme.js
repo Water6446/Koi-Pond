@@ -131,19 +131,19 @@ function easeInOutSine(t) {
 const colorKeyframes = [
     { hour: 0, bgColor: '#0D1B2A', waterTint: 'rgba(15, 25, 45, 0.3)', leafColors: { primary: '#2C3E50', secondary: '#34495E', ternary: '#415A77' } }, // Midnight - Deep blue night
     { hour: 4, bgColor: '#1B263B', waterTint: 'rgba(25, 35, 60, 0.28)', leafColors: { primary: '#34495E', secondary: '#415A77', ternary: '#4A6FA5' } }, // Deep night
-    { hour: 5, bgColor: '#151C33', waterTint: 'rgba(21, 28, 51, 0.24)', leafColors: { primary: '#2B374F', secondary: '#33405A', ternary: '#3C4A66' } }, // Pre-dawn deep navy
-    { hour: 6, bgColor: '#53375F', waterTint: 'rgba(83, 55, 95, 0.22)', leafColors: { primary: '#65426E', secondary: '#6F4C79', ternary: '#7A5784' } }, // Early dawn dusty violet
-    { hour: 7, bgColor: '#b8897eff', waterTint: 'rgba(215, 134, 116, 0.2)', leafColors: { primary: '#DF917E', secondary: '#E59B88', ternary: '#EBA693' } }, // Sunrise muted peach
-    { hour: 8, bgColor: '#D39A82', waterTint: 'rgba(211, 154, 130, 0.18)', leafColors: { primary: '#D9A58D', secondary: '#DEAF97', ternary: '#E3B9A2' } }, // Warm dusty amber
-    { hour: 9, bgColor: '#CFB092', waterTint: 'rgba(207, 176, 146, 0.16)', leafColors: { primary: '#D5BA9C', secondary: '#DAC3A6', ternary: '#DFCCB0' } }, // Soft tan sky
+    { hour: 5, bgColor: '#151C33', waterTint: 'rgba(21, 28, 51, 0.26)', leafColors: { primary: '#2B374F', secondary: '#33405A', ternary: '#3C4A66' } }, // Pre-dawn deep navy
+    { hour: 6, bgColor: '#3D2B47', waterTint: 'rgba(61, 43, 71, 0.24)', leafColors: { primary: '#4A3850', secondary: '#544058', ternary: '#5E4860' } }, // Early dawn dark violet
+    { hour: 7, bgColor: '#5B4A55', waterTint: 'rgba(91, 74, 85, 0.22)', leafColors: { primary: '#6B5A64', secondary: '#75646D', ternary: '#7F6E76' } }, // Sunrise dark dusty purple-gray
+    { hour: 8, bgColor: '#735E52', waterTint: 'rgba(115, 94, 82, 0.2)', leafColors: { primary: '#826D5F', secondary: '#8C7768', ternary: '#968171' } }, // Warm dull taupe
+    { hour: 9, bgColor: '#5D6F7A', waterTint: 'rgba(93, 111, 122, 0.16)', leafColors: { primary: '#6E8667', secondary: '#789170', ternary: '#829C79' } }, // Blue-gray transition to day
     { hour: 10, bgColor: '#3A7CA5', waterTint: 'rgba(140, 190, 230, 0.08)', leafColors: { primary: '#7AAA44', secondary: '#88BB33', ternary: '#95CC22' } }, // Mid-morning - clear blue
     { hour: 12, bgColor: '#2E6A8F', waterTint: 'rgba(120, 180, 225, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Noon - deep clear blue
     { hour: 14, bgColor: '#2E6A8F', waterTint: 'rgba(120, 180, 225, 0.08)', leafColors: { primary: '#88BB33', secondary: '#95CC22', ternary: '#A0DD11' } }, // Afternoon - same as noon
-    { hour: 16, bgColor: '#3E6E96', waterTint: 'rgba(104, 149, 185, 0.1)', leafColors: { primary: '#799549', secondary: '#85A157', ternary: '#91AD65' } }, // Late afternoon - darker warm blue
-    { hour: 17, bgColor: '#4E698F', waterTint: 'rgba(94, 133, 175, 0.12)', leafColors: { primary: '#A48757', secondary: '#AF9363', ternary: '#BAA070' } }, // Golden hour cool blue
-    { hour: 18, bgColor: '#C5868F', waterTint: 'rgba(197, 134, 143, 0.16)', leafColors: { primary: '#CC9098', secondary: '#D198A1', ternary: '#D6A3AB' } }, // Sunset dusty rose
-    { hour: 19, bgColor: '#BF7087', waterTint: 'rgba(191, 112, 135, 0.18)', leafColors: { primary: '#C77A91', secondary: '#CD849A', ternary: '#D390A4' } }, // Sunset muted pink
-    { hour: 20, bgColor: '#33274E', waterTint: 'rgba(51, 39, 78, 0.24)', leafColors: { primary: '#5A4B76', secondary: '#685784', ternary: '#766392' } }, // Evening darker indigo
+    { hour: 16, bgColor: '#2F4E6B', waterTint: 'rgba(47, 78, 107, 0.12)', leafColors: { primary: '#5A6F42', secondary: '#647A4C', ternary: '#6E8556' } }, // Late afternoon - darker muted blue
+    { hour: 17, bgColor: '#3E4F66', waterTint: 'rgba(62, 79, 102, 0.14)', leafColors: { primary: '#766646', secondary: '#807050', ternary: '#8A7A5A' } }, // Golden hour dark blue-gray
+    { hour: 18, bgColor: '#7A5559', waterTint: 'rgba(122, 85, 89, 0.18)', leafColors: { primary: '#836165', secondary: '#8D6B6E', ternary: '#977578' } }, // Sunset dark dusty rose
+    { hour: 19, bgColor: '#6B4856', waterTint: 'rgba(107, 72, 86, 0.2)', leafColors: { primary: '#785462', secondary: '#82606C', ternary: '#8C6C76' } }, // Sunset dark muted mauve
+    { hour: 20, bgColor: '#33274E', waterTint: 'rgba(51, 39, 78, 0.26)', leafColors: { primary: '#5A4B76', secondary: '#685784', ternary: '#766392' } }, // Evening darker indigo
     { hour: 21, bgColor: '#252035', waterTint: 'rgba(60, 50, 80, 0.28)', leafColors: { primary: '#445566', secondary: '#556677', ternary: '#667788' } }, // Late evening
     { hour: 23, bgColor: '#15192B', waterTint: 'rgba(20, 30, 50, 0.3)', leafColors: { primary: '#334455', secondary: '#445566', ternary: '#556677' } }, // Late night
     { hour: 24, bgColor: '#0D1B2A', waterTint: 'rgba(15, 25, 45, 0.3)', leafColors: { primary: '#2C3E50', secondary: '#34495E', ternary: '#415A77' } }  // Midnight (wrap)
@@ -154,9 +154,9 @@ const colorKeyframes = [
  */
 const timeThemes = {
     dawn: {
-        bgColor: '#D78674',
-        waterTint: 'rgba(215, 134, 116, 0.2)',
-        leafColors: { primary: '#DF917E', secondary: '#E59B88', ternary: '#EBA693' }
+        bgColor: '#5B4A55',
+        waterTint: 'rgba(91, 74, 85, 0.22)',
+        leafColors: { primary: '#6B5A64', secondary: '#75646D', ternary: '#7F6E76' }
     },
     day: {
         bgColor: '#005A5A',
@@ -164,9 +164,9 @@ const timeThemes = {
         leafColors: { primary: '#88AA11', secondary: '#77AA22', ternary: '#66AA33' }
     },
     dusk: {
-        bgColor: '#BF7087',
-        waterTint: 'rgba(191, 112, 135, 0.18)',
-        leafColors: { primary: '#C77A91', secondary: '#CD849A', ternary: '#D390A4' }
+        bgColor: '#6B4856',
+        waterTint: 'rgba(107, 72, 86, 0.2)',
+        leafColors: { primary: '#785462', secondary: '#82606C', ternary: '#8C6C76' }
     },
     night: {
         bgColor: '#1A1A2E',

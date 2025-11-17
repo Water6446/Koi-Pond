@@ -677,11 +677,11 @@ canvas {
 .widget.lilypad {
     padding: 12px 16px;
     border-radius: 12px;
-    background: rgba(58, 94, 42, 0.95); /* Match actual lily pad green (#3a5e2a) - more opaque */
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); /* Stronger shadow for depth */
-    border: 1px solid rgba(68, 136, 68, 0.5); /* Border using alt lily pad color */
+    background: rgba(42, 68, 30, 0.95); /* Darker lily pad green - more opaque */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* Stronger shadow for depth */
+    border: 1px solid rgba(50, 80, 45, 0.6); /* Darker border */
     transform: translateZ(0);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); /* Clear text shadow without glass effect */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); /* Stronger text shadow for contrast */
     backdrop-filter: none !important; /* Explicitly disable any backdrop filter */
     -webkit-backdrop-filter: none !important;
     min-width: calc(var(--grid-size) * 3);
@@ -724,21 +724,21 @@ canvas {
             0deg,
             transparent,
             transparent 3px,
-            rgba(90, 70, 50, 0.15) 3px,
-            rgba(90, 70, 50, 0.15) 6px
+            rgba(60, 50, 45, 0.12) 3px,
+            rgba(60, 50, 45, 0.12) 6px
         ),
         linear-gradient(135deg, 
-            #dccfb3 0%,
-            #d4c4a8 50%,
-            #c9b896 100%
+            #9a8976 0%,
+            #8c7d6e 50%,
+            #7e7164 100%
         ) !important;
-    border: 3px solid rgb(90, 75, 60) !important; /* Slightly darker border */
+    border: 3px solid rgba(70, 60, 50, 0.5) !important; /* Muted brown-gray border */
     border-radius: 12px !important;
-    box-shadow: 0 3px 10px rgba(60, 45, 35, 0.25) !important; /* Smaller, more realistic shadow */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25) !important; /* Softer shadow */
     padding: 14px 18px !important;
-    color: #0a0502 !important;
+    color: #1a1612 !important; /* Dark text on paper */
     font-weight: 600 !important;
-    text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.3) !important; /* Slightly stronger highlight */
+    text-shadow: 0 0.5px 1px rgba(200, 190, 175, 0.25) !important; /* Subtle highlight */
     min-width: calc(var(--grid-size) * 4) !important;
     min-height: calc(var(--grid-size) * 2) !important;
     transform: none !important;
