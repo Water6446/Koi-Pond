@@ -79,8 +79,8 @@ const defaultSettings = {
     debugMode: false,
     customBackground: null,
     customWaterColor: null,
-    manualHour: 12,
-    autoFollowTime: false // Track if time should auto-update
+    manualHour: getCurrentHourDecimal(), // Start with current time
+    autoFollowTime: true // Auto-sync time by default
 };
 
 /**
@@ -1272,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Apply customize panel settings
-        const manualHour = userSettings.manualHour !== undefined ? userSettings.manualHour : 12;
+        const manualHour = userSettings.manualHour !== undefined ? userSettings.manualHour : getCurrentHourDecimal();
         const waterColor = userSettings.customWaterColor;
         
         // Set slider value and display (slider is always visible now)

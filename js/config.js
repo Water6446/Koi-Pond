@@ -25,7 +25,7 @@ export const config = {
         wiggleSpeed: 0.05, // Reduced from 0.08 for less frequent wiggle
         wiggleAmount: 0.035, // Reduced from 0.05 for less erratic side-to-side
         tailAmplitude: 2.0, // Reduced from 2.5 for less tail movement
-        rareKoiChance: 0.0002441406,
+        rareKoiChance: 0.005,
         growthRate: 0.08,
         maxGrowth: 1.3 // Less maximum growth
     },
