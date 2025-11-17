@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper function to format hour decimal as HH:MM
     function formatTimeFromHour(hourDecimal) {
         const hours = Math.floor(hourDecimal);
-        const minutes = Math.floor((hourDecimal - hours) * 60);
+        const minutes = Math.round((hourDecimal - hours) * 60); // Use Math.round to handle floating point precision
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 
@@ -528,6 +528,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Make time display clickable for manual time input
         if (timeDisplay && timeSlider) {
             timeDisplay.addEventListener('click', () => {
+                // Prevent multiple inputs from being created
+                if (timeDisplay.querySelector('input')) {
+                    return;
+                }
+                
                 // Create input element
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -804,6 +809,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let lastTime = 0;
     let frameCount = 0;
+    let animationId = null;
+    
     function animate(timestamp) {
         const deltaTime = (timestamp - lastTime) / 1000 || 0;
         lastTime = timestamp;
@@ -927,8 +934,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update debug stats
         updateDebugStats(deltaTime);
 
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
     }
+    
+    // Handle page visibility changes to maintain smooth animation
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // Page is hidden, cancel animation
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        } else {
+            // Page is visible again, reset timing and restart
+            lastTime = performance.now();
+            frameCount = 0;
+            animationId = requestAnimationFrame(animate);
+        }
+    });
 
     /**
      * Draw debug visualizations on canvas
@@ -1277,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper function to format hour decimal as HH:MM (defined earlier, but ensure it's accessible)
     function formatTimeFromHour(hourDecimal) {
         const hours = Math.floor(hourDecimal);
-        const minutes = Math.floor((hourDecimal - hours) * 60);
+        const minutes = Math.round((hourDecimal - hours) * 60); // Use Math.round to handle floating point precision
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 

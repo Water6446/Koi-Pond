@@ -299,18 +299,31 @@ export function applyAllWidgetSettings(defaultSettings) {
             }
         }
 
-        // 2. Apply Size
+        // 2. Apply Size - SNAP TO GRID
         const size = userSettings.widgetSizes[id];
         if (size && size.width && size.height) {
-            widget.style.width = size.width;
-            widget.style.height = size.height;
+            // Parse the size values and snap to grid
+            const widthPx = parseFloat(size.width);
+            const heightPx = parseFloat(size.height);
+            const snappedWidth = Math.round(widthPx / GRID_SIZE) * GRID_SIZE;
+            const snappedHeight = Math.round(heightPx / GRID_SIZE) * GRID_SIZE;
+            
+            widget.style.width = `${snappedWidth}px`;
+            widget.style.height = `${snappedHeight}px`;
             // Apply height to CSS var for font scaling
-            widget.style.setProperty('--widget-height-px', `${parseFloat(size.height)}px`);
+            widget.style.setProperty('--widget-height-px', `${snappedHeight}px`);
         } else {
-            // Apply default if not set
+            // Apply default size and snap to grid
             const defaultSize = defaultSettings.widgetSizes[id];
             if (defaultSize) {
-                widget.style.setProperty('--widget-height-px', `${parseFloat(defaultSize.height)}px`);
+                const widthPx = parseFloat(defaultSize.width);
+                const heightPx = parseFloat(defaultSize.height);
+                const snappedWidth = Math.round(widthPx / GRID_SIZE) * GRID_SIZE;
+                const snappedHeight = Math.round(heightPx / GRID_SIZE) * GRID_SIZE;
+                
+                widget.style.width = `${snappedWidth}px`;
+                widget.style.height = `${snappedHeight}px`;
+                widget.style.setProperty('--widget-height-px', `${snappedHeight}px`);
             }
         }
 

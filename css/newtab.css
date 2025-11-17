@@ -36,7 +36,7 @@ body::after {
     height: 100%;
     pointer-events: none;
     z-index: 9999;
-    box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.4), inset 0 0 100px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.35), inset 0 0 80px rgba(0, 0, 0, 0.18);
 }
 
 /* === Loading Overlay === */
@@ -163,7 +163,7 @@ canvas {
 .control-divider {
     border: none;
     border-top: 1px solid rgba(255, 255, 255, 0.3);
-    margin: 15px 0;
+    margin: 12px 0; /* Reduced from 15px */
 }
 .toggle-label {
     font-weight: bold;
@@ -353,7 +353,7 @@ canvas {
     z-index: 10;
     color: white;
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6); /* Simplified shadow */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Smaller, tighter shadow */
     background: var(--widget-bg);
     border-radius: 8px;
     padding: 20px;
@@ -362,7 +362,7 @@ canvas {
     /* Sizing */
     min-width: calc(var(--grid-size) * 4);
     min-height: calc(var(--grid-size) * 2);
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to prevent clipping on hover */
 
     /* Dragging */
     pointer-events: auto;
@@ -480,11 +480,12 @@ canvas {
 #clock-display {
     font-size: 4.5rem;
     font-weight: 200;
-    text-align: left;
+    text-align: center; /* Changed from left to center */
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
+    justify-content: center; /* Added to center horizontally */
 }
 
 #weather-widget {
@@ -676,12 +677,13 @@ canvas {
 .widget.lilypad {
     padding: 12px 16px;
     border-radius: 12px;
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(3px); /* Reduced from 4px */
-    -webkit-backdrop-filter: blur(3px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18); /* Simplified shadow */
+    background: rgba(10, 30, 20, 0.35); /* Slightly darker, more saturated green-black */
+    backdrop-filter: blur(4px); /* Slightly more blur for depth */
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16); /* Smaller, more subtle shadow */
+    border: 1px solid rgba(100, 180, 100, 0.15); /* Subtle green border */
     transform: translateZ(0);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); /* Simplified shadow */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); /* Slightly stronger for contrast */
     min-width: calc(var(--grid-size) * 3);
     min-height: calc(var(--grid-size) * 1.2);
 }
@@ -694,7 +696,7 @@ canvas {
     border: 1px solid rgba(255,255,255,0.12);
     backdrop-filter: blur(5px) saturate(110%); /* Reduced blur from 8px to 5px */
     -webkit-backdrop-filter: blur(5px) saturate(110%);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25); /* Simplified shadow */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); /* Smaller, more realistic shadow */
     min-width: calc(var(--grid-size) * 2.5);
     min-height: calc(var(--grid-size) * 1.0);
 }
@@ -711,7 +713,7 @@ canvas {
     /* Keep layout spacing reasonable but tighten padding so widgets hug content */
     padding: 6px 8px !important;
     /* preserve text readability with a subtle text shadow */
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 .widget.none .resize-handle, .widget.nobackdrop .resize-handle { right: 8px; bottom: 8px; }
 
@@ -722,20 +724,21 @@ canvas {
             0deg,
             transparent,
             transparent 3px,
-            rgba(80, 60, 45, 0.12) 3px,
-            rgba(80, 60, 45, 0.12) 6px
+            rgba(90, 70, 50, 0.15) 3px,
+            rgba(90, 70, 50, 0.15) 6px
         ),
         linear-gradient(135deg, 
-            #d4c4a8 0%,
+            #dccfb3 0%,
+            #d4c4a8 50%,
             #c9b896 100%
         ) !important;
-    border: 3px solid rgb(101, 84, 68) !important;
+    border: 3px solid rgb(90, 75, 60) !important; /* Slightly darker border */
     border-radius: 12px !important;
-    box-shadow: 0 5px 15px rgba(60, 45, 35, 0.3) !important; /* Simplified shadow */
+    box-shadow: 0 3px 10px rgba(60, 45, 35, 0.25) !important; /* Smaller, more realistic shadow */
     padding: 14px 18px !important;
-    color: #0d0603 !important;
+    color: #0a0502 !important;
     font-weight: 600 !important;
-    text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.25) !important;
+    text-shadow: 0 0.5px 1px rgba(255, 255, 255, 0.3) !important; /* Slightly stronger highlight */
     min-width: calc(var(--grid-size) * 4) !important;
     min-height: calc(var(--grid-size) * 2) !important;
     transform: none !important;
@@ -798,15 +801,16 @@ canvas {
     width: 420px;
     pointer-events: auto; /* Ensure the settings panel is always clickable */
     overflow-x: hidden; /* Prevent horizontal scrollbar */
+    padding: 16px; /* Reduced from 20px */
 }
 
 /* Consistent header styling for all settings panels */
 .controls-settings-panel h3 {
-    margin: 0 0 20px 0;
+    margin: 0 0 14px 0; /* Reduced from 20px */
     color: white;
     font-size: 1.1rem;
     font-weight: 600;
-    padding-bottom: 12px;
+    padding-bottom: 10px; /* Reduced from 12px */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -851,7 +855,7 @@ canvas {
 .settings-row {
     display: flex;
     flex-direction: column;
-    margin-bottom: 16px;
+    margin-bottom: 12px; /* Reduced from 16px */
     position: relative;
 }
 
@@ -1058,13 +1062,14 @@ canvas {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     margin-top: 12px;
+    padding: 4px 0; /* Add padding to prevent clipping on hover */
 }
 
 .widget-style-option {
     position: relative;
     cursor: pointer;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to prevent clipping */
     transition: all 0.2s ease;
 }
 
@@ -1418,8 +1423,8 @@ canvas {
 .time-slider-wrapper {
     position: relative;
     width: 100%;
-    padding: 10px 20px 20px;
-    margin-top: 10px;
+    padding: 8px 16px 16px; /* Reduced from 10px 20px 20px */
+    margin-top: 8px; /* Reduced from 10px */
 }
 
 /* SVG arc that shows the gradient track */

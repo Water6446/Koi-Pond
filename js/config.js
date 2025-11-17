@@ -19,12 +19,12 @@ export const config = {
         meanSize: 67, // Smaller fish = less pixels to render
         stdDevSize: 4.0,
         minSize: 15,
-        minSpeed: .7, // Slightly slower
-        maxSpeed: 1.3,
-        turnSpeed: 0.025, // Smoother turns
-        wiggleSpeed: 0.08, // Less frequent wiggle
-        wiggleAmount: 0.05,
-        tailAmplitude: 2.5, // Less tail movement
+        minSpeed: .5, // Reduced from .7 for slower swimming
+        maxSpeed: 1.0, // Reduced from 1.3 for calmer movement
+        turnSpeed: 0.018, // Reduced from 0.025 for smoother, less erratic turns
+        wiggleSpeed: 0.05, // Reduced from 0.08 for less frequent wiggle
+        wiggleAmount: 0.035, // Reduced from 0.05 for less erratic side-to-side
+        tailAmplitude: 2.0, // Reduced from 2.5 for less tail movement
         rareKoiChance: 0.0002441406,
         growthRate: 0.08,
         maxGrowth: 1.3 // Less maximum growth
