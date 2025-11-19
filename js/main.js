@@ -8,6 +8,7 @@ import { initFeeder, foods as feederFoods, updateFoods, drawFoods } from './Feed
 import { Ripple } from './Ripple.js';
 import { Dragonfly } from './Dragonfly.js';
 import { initTimeTheme, applyTimeTheme, getCurrentHourDecimal } from './TimeTheme.js';
+import { initTimer } from './Timer.js';
 import {
     initWidgetManager,
     applyWidgetStyle,
@@ -15,7 +16,6 @@ import {
     initWidgetInteractions,
     applyAllWidgetSettings,
     setupWidgetStyleControls,
-    setupGoogleSearchWidget,
     setupSettingsPanelClickOutside,
     drawWidgetLilyPad
 } from './WidgetManager.js';
@@ -55,13 +55,13 @@ const defaultSettings = {
         "clock-widget": { width: "320px", height: "120px" },
         "weather-widget": { width: "240px", height: "120px" },
             "quote-widget": { width: "700px", height: "120px" },
-            "google-search-widget": { width: "420px", height: "64px" }
+            "timer-widget": { width: "280px", height: "140px" }
     },
     widgetVisibility: {
         "clock-widget": true,
         "weather-widget": true,
             "quote-widget": true,
-            "google-search-widget": true
+            "timer-widget": true
     },
     weatherSettings: {
         units: "C",
@@ -909,7 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { el: document.getElementById('clock-widget'), hasFlower: false },
                 { el: document.getElementById('weather-widget'), hasFlower: true },
                 { el: document.getElementById('quote-widget'), hasFlower: true },
-                { el: document.getElementById('google-search-widget'), hasFlower: false }
+                { el: document.getElementById('timer-widget'), hasFlower: false }
             ];
             
             widgetElements.forEach(({ el, hasFlower }) => {
@@ -1204,8 +1204,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply widget style from settings and set up controls
     setupWidgetStyleControls(defaultSettings);
 
-    // Google Search widget setup
-    setupGoogleSearchWidget();
+    // Initialize timer widget
+    initTimer();
     }
 
     /**

@@ -1,5 +1,14 @@
 // --- js/TimeTheme.js ---
 
+// Shared shadow state object that other classes can read directly
+// x, y: The offset in pixels
+// color: The rgba color string (including opacity)
+export const shadowState = {
+    x: 12,
+    y: 12,
+    color: 'rgba(0, 0, 0, 0.12)'
+};
+
 /**
  * Gets the current time of day
  */
@@ -60,6 +69,34 @@ function lerpRGBA(rgba1, rgba2, t) {
 }
 
 /**
+ * Updates the global shadow state based on the time
+ */
+function updateShadowState(timeDecimal) {
+    // 1. Calculate Rotation (Sun movement)
+    // We map the 24h cycle to 360 degrees (2 * PI)
+    // Offset by -6 hours so that:
+    // 6 AM -> Sun Left -> Shadow Points Right (+X)
+    // 12 PM -> Sun Top -> Shadow Points Down (+Y)
+    // 18 PM -> Sun Right -> Shadow Points Left (-X)
+    const angle = ((timeDecimal - 6) / 24) * Math.PI * 2;
+    
+    // 2. Calculate Offset Vector
+    // Max shadow distance is 15px
+    const distance = 15; 
+    shadowState.x = Math.cos(angle) * distance;
+    shadowState.y = Math.sin(angle) * distance;
+
+    // 3. Calculate Opacity (Night/Day cycle)
+    // Day (10-14): Sharpest shadow (0.15)
+    // Night: Fade out shadow significantly (0.05) to simulate diffuse moon/ambient light
+    // We use a simple sine wave centered on Noon (12) to determine "Day-ness"
+    const dayFactor = Math.max(0, Math.sin(((timeDecimal - 6) / 24) * Math.PI * 2)); // 0 at night, 1 at noon
+    const opacity = lerp(0.06, 0.16, dayFactor); // Range from 0.06 (night) to 0.16 (day)
+    
+    shadowState.color = `rgba(0, 0, 0, ${opacity.toFixed(3)})`;
+}
+
+/**
  * Get fluid blended theme colors based on time (system or manual)
  * Uses keyframe-based interpolation for perfectly smooth 24-hour transitions
  * @param {number|null} manualHour - Optional manual hour override (0-24 decimal)
@@ -83,6 +120,9 @@ function getFluidBlendedTheme(manualHour = null) {
     while (timeDecimal < 0) timeDecimal += 24;
     while (timeDecimal >= 24) timeDecimal -= 24;
     
+    // --- NEW: Update shadows based on this time ---
+    updateShadowState(timeDecimal);
+
     // Find the two nearest keyframes
     let keyframe1 = colorKeyframes[0];
     let keyframe2 = colorKeyframes[1];
@@ -101,7 +141,7 @@ function getFluidBlendedTheme(manualHour = null) {
     const t = duration > 0 ? elapsed / duration : 0;
     
     // Apply easing for even smoother transitions (optional - can remove for pure linear)
-    const easedT = t; // Linear - can use easeInOutSine(t) for smoother feel
+    const easedT = t; 
     
     // Interpolate all color properties
     return {
@@ -113,13 +153,6 @@ function getFluidBlendedTheme(manualHour = null) {
             ternary: lerpColor(keyframe1.leafColors.ternary, keyframe2.leafColors.ternary, easedT)
         }
     };
-}
-
-/**
- * Optional easing function for even smoother transitions
- */
-function easeInOutSine(t) {
-    return -(Math.cos(Math.PI * t) - 1) / 2;
 }
 
 /**
@@ -177,7 +210,7 @@ const timeThemes = {
 
 /**
  * Apply time-based theme to the background with fluid color blending
- * @param {string|null} manualTimeOfDay - OLD PARAM: Override time of day ('dawn', 'day', 'dusk', 'night', or null for auto) - DEPRECATED in favor of manualHour
+ * @param {string|null} manualTimeOfDay - OLD PARAM: Override time of day ('dawn', 'day', 'dusk', 'night', or null for auto)
  * @param {string|null} customWaterColor - Custom water color (hex string or null)
  * @param {number|null} manualHour - NEW PARAM: Manual hour override for slider (0-24 decimal, or null for system time)
  */

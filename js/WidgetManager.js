@@ -373,7 +373,8 @@ export function setupWidgetStyleControls(defaultSettings) {
 }
 
 /**
- * Setup Google Search widget functionality
+ * Setup Search widget functionality using Chrome Search API
+ * Respects user's default search engine settings
  */
 export function setupGoogleSearchWidget() {
     const searchForm = document.getElementById('google-search-form');
@@ -381,11 +382,22 @@ export function setupGoogleSearchWidget() {
     if (searchForm && searchInput) {
         searchForm.addEventListener('submit', (ev) => {
             ev.preventDefault();
-            const q = searchInput.value.trim();
-            if (!q) return;
-            const url = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-            // Open results in the same tab (user requested behavior)
-            window.location.href = url;
+            const query = searchInput.value.trim();
+            if (!query) return;
+            
+            // Use Chrome Search API - respects user's default search engine
+            if (typeof chrome !== 'undefined' && chrome.search && chrome.search.query) {
+                chrome.search.query({
+                    text: query,
+                    disposition: 'NEW_TAB' // Opens in new tab, keeping pond visible
+                }, () => {
+                    // Clear input after search
+                    searchInput.value = '';
+                });
+            } else {
+                // Fallback for testing outside Chrome extension context
+                console.warn('Chrome Search API not available');
+            }
         });
         // Prevent mousedown on the input or button from bubbling up to the widget drag handler
         searchInput.addEventListener('mousedown', (ev) => ev.stopPropagation());

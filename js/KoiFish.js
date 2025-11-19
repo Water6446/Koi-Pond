@@ -2,6 +2,7 @@ import { gaussianRandom } from './utils.js';
 import { config, foodConfig } from './config.js';
 import { TrailParticle } from './TrailParticle.js';
 import { ChewParticle } from './ChewParticle.js';
+import { shadowState } from './TimeTheme.js'; // Import the shared shadow state
 
 // --- Koi Fish Class (MODIFIED) ---
 export class KoiFish {
@@ -300,7 +301,7 @@ export class KoiFish {
                       avoidDY * config.physics.avoidanceForce + 
                       schoolDY * config.physics.schoolingForce +
                       centerDY * config.physics.centeringForce +
-                      mouseAvoidDY * config.physics.mouseAvoidanceForce +
+                      mouseAvoidDX * config.physics.mouseAvoidanceForce +
                       (foodDY * foodConfig.attractForce);
         }
 
@@ -358,12 +359,8 @@ export class KoiFish {
         }
     }
 
-    // --- draw method - RESTORED ORIGINAL STYLE ---
+    // --- draw method - MODIFIED FOR DYNAMIC TIME SHADOWS ---
     draw(ctx, performanceMode = false, timestamp = 0) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle);
-        
         // Body wiggle calculations (cache these for reuse)
         const bodyBend = Math.sin(this.wiggleOffset) * this.wiggleAmount * this.width;
         const tailBend = Math.sin(this.wiggleOffset - 0.8) * this.wiggleAmount * config.koi.tailAmplitude * this.width;
@@ -371,41 +368,65 @@ export class KoiFish {
         const headX = this.length / 2;
         const tailBaseX = -this.length / 2;
         const tailBaseY = bodyBend;
-        
-        // FAKE SHADOW: Only draw in normal mode (disabled in performance mode)
+
+        // --- 0. DRAW SHADOW PASS (Dynamic Time-Based) ---
+        // Instead of a fixed offset, we use the shared shadowState
         if (!performanceMode) {
-            // Draw shadow ellipse directly under the fish (no offset)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, this.length * 0.45, this.width * 0.75, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.save();
             
-            // Add sparkle glow for rare koi (colored glow behind fish)
-            if (this.isRare) {
-                const sparkleTime = timestamp * 0.003;
-                const sparkleIntensity = (Math.sin(sparkleTime) + 1) * 0.5;
-                
-                // Outer glow
-                ctx.fillStyle = this.patternColor1;
-                ctx.globalAlpha = 0.15 + sparkleIntensity * 0.15;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.length * 0.65, this.width * 1.2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Inner brighter glow
-                ctx.globalAlpha = 0.25 + sparkleIntensity * 0.2;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.length * 0.5, this.width * 0.95, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.globalAlpha = 1.0;
-            }
+            // Apply dynamic global offset (sun rotation)
+            ctx.translate(this.x + shadowState.x, this.y + shadowState.y);
+            ctx.rotate(this.angle); 
+
+            // Draw Body Silhouette
+            ctx.beginPath();
+            ctx.moveTo(headX, 0);
+            ctx.quadraticCurveTo(0, this.width, tailBaseX, tailBaseY);
+            ctx.quadraticCurveTo(0, -this.width, headX, 0);
+            
+            // Draw Tail Silhouette
+            const tailEndX = tailBaseX - this.length * 0.4;
+            const tailWidth = this.width * 1.5;
+            ctx.moveTo(tailBaseX, tailBaseY);
+            ctx.quadraticCurveTo(
+                tailBaseX - this.length * 0.2, tailBaseY + tailWidth * 0.5, 
+                tailEndX, tailBaseY + tailBend
+            );
+            ctx.quadraticCurveTo(
+                tailBaseX - this.length * 0.2, tailBaseY - tailWidth * 0.5,
+                tailBaseX, tailBaseY
+            );
+            
+            // Fill Shadow with dynamic color/opacity
+            ctx.fillStyle = shadowState.color; 
+            
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- MAIN FISH DRAWING ---
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        
+        // FAKE GLOW for Rare Fish (Only in normal mode)
+        if (!performanceMode && this.isRare) {
+            const sparkleTime = timestamp * 0.003;
+            const sparkleIntensity = (Math.sin(sparkleTime) + 1) * 0.5;
+            
+            // Inner brighter glow
+            ctx.fillStyle = this.patternColor1;
+            ctx.globalAlpha = 0.15 + sparkleIntensity * 0.15;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.length * 0.5, this.width * 0.95, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
         }
         
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.lineWidth = 1;
 
-        // Eating mouth indicator (small dark ellipse near the nose)
+        // Eating mouth indicator
         if (this.eatTimer > 0) {
             const animT = Math.max(0, Math.min(1, this.eatTimer / 0.35));
             const mouthFactor = Math.sin((1 - animT) * Math.PI) * 1.2;
@@ -428,11 +449,10 @@ export class KoiFish {
         ctx.fill();
         ctx.stroke();
 
-        // --- 3. Draw Patterns (Clipped) - WITH WIGGLE ANIMATION ---
+        // --- 3. Draw Patterns (Clipped) ---
         ctx.save();
         ctx.clip();
         
-        // Cache wiggle calculations for spots
         const wiggleBase = this.wiggleAmount * this.width;
         
         this.spots.forEach(spot => {
@@ -466,7 +486,7 @@ export class KoiFish {
         ctx.fill();
         ctx.stroke();
         
-        // --- 5. Draw Pectoral Fins (Animated) - RESTORED ---
+        // --- 5. Draw Pectoral Fins (Animated) ---
         const finFlap = Math.sin(this.finWiggleOffset) * 0.3 + 0.9;
         ctx.fillStyle = this.patternColor1;
         ctx.globalAlpha = 0.7;
@@ -483,7 +503,7 @@ export class KoiFish {
         
         ctx.globalAlpha = 1.0;
 
-        // --- 6. Draw Eyes - BOTH EYES RESTORED ---
+        // --- 6. Draw Eyes ---
         ctx.fillStyle = '#111';
         // Top eye
         ctx.beginPath();

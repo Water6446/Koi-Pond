@@ -68,9 +68,9 @@
             </div>
             
             <div class="widget-section">
-                <label for="googleSearchToggle">Search</label>
-                <input type="checkbox" id="googleSearchToggle" class="widget-toggle" data-widget-id="google-search-widget">
-                <button class="settings-trigger" data-panel-id="google-search-settings-panel" aria-label="Search Settings">⚙️</button>
+                <label for="timerToggle">Timer</label>
+                <input type="checkbox" id="timerToggle" class="widget-toggle" data-widget-id="timer-widget">
+                <button class="settings-trigger" data-panel-id="timer-settings-panel" aria-label="Timer Settings">⚙️</button>
             </div>
         </div>
 
@@ -164,12 +164,24 @@
             <button type="button" class="settings-done-button" data-panel-id="quote-settings-panel">Done</button>
         </div>
 
-        <div id="google-search-settings-panel" class="controls-settings-panel">
-            <h3> Search Settings</h3>
+        <div id="timer-settings-panel" class="controls-settings-panel">
+            <h3>⏱️ Timer Settings</h3>
             <div class="settings-row">
-                <p style="margin: 0; color: rgba(255, 255, 255, 0.7); font-size: 14px;">This widget opens Google search results in the current tab.</p>
+                <label for="timerHours">Hours:</label>
+                <input type="number" id="timerHours" min="0" max="23" value="0" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white;">
             </div>
-            <button type="button" class="settings-done-button" data-panel-id="google-search-settings-panel">Done</button>
+            <div class="settings-row">
+                <label for="timerMinutes">Minutes:</label>
+                <input type="number" id="timerMinutes" min="0" max="59" value="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white;">
+            </div>
+            <div class="settings-row">
+                <label for="timerSeconds">Seconds:</label>
+                <input type="number" id="timerSeconds" min="0" max="59" value="0" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white;">
+            </div>
+            <div class="settings-row">
+                <button type="button" id="timerSetButton" class="control-button">Set Timer</button>
+            </div>
+            <button type="button" class="settings-done-button" data-panel-id="timer-settings-panel">Done</button>
         </div>
 
         <div id="clock-settings-panel" class="controls-settings-panel">
@@ -281,11 +293,14 @@
         <div class="resize-handle"></div>
     </div>
 
-    <div id="google-search-widget" class="widget">
-        <div class="google-search-container">
-            <form id="google-search-form" class="google-search-form" role="search">
-                <input id="google-search-input" type="text" placeholder="Search Google or type a URL" autocomplete="on" />
-            </form>
+    <div id="timer-widget" class="widget">
+        <div id="timer-display">
+            <div id="timer-time">00:00:00</div>
+            <div id="timer-controls">
+                <button id="timer-start" class="timer-button">Start</button>
+                <button id="timer-pause" class="timer-button" style="display: none;">Pause</button>
+                <button id="timer-reset" class="timer-button">Reset</button>
+            </div>
         </div>
         <div class="resize-handle"></div>
     </div>
@@ -344,6 +359,16 @@
         </div>
     </div>
     
+    <script>
+        // Disable transitions on page load
+        document.documentElement.classList.add('no-transition');
+        window.addEventListener('load', () => {
+            // Re-enable transitions after a brief delay
+            setTimeout(() => {
+                document.documentElement.classList.remove('no-transition');
+            }, 100);
+        });
+    </script>
     <script src="js/main.js" type="module" defer></script>
 </body>
 </html>

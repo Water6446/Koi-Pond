@@ -1,6 +1,7 @@
 import { gaussianRandom } from './utils.js';
 import { config } from './config.js';
 import { TrailParticle } from './TrailParticle.js';
+import { shadowState } from './TimeTheme.js'; // Import the shared shadow state
 
 // --- LillyPad Class (REFACTORED) ---
 export class LillyPad {
@@ -56,20 +57,29 @@ export class LillyPad {
         this.lastY = this.y;
     }
     
-    // --- OPTIMIZED draw method - simplified shadows and rendering ---
+    // --- OPTIMIZED draw method - with dynamic shadows ---
     draw(ctx, flowerImage) {
+        const r = this.radius;
+
+        // --- 1. SHADOW PASS (Dynamic Time-Based) ---
+        // Draw shadow first with global offset (sun rotation) and no blur
+        ctx.save();
+        ctx.translate(this.x + shadowState.x, this.y + shadowState.y); 
+        ctx.rotate(this.rotation);
+        
+        // Since all pad types in this code form a circular footprint,
+        // we draw a simple circle shadow.
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = shadowState.color; // Dynamic color/opacity
+        ctx.fill();
+        ctx.restore();
+
+        // --- 2. MAIN DRAW PASS ---
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         
-        const r = this.radius;
-
-        // Subtle shadow for depth
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 8;
-        ctx.shadowOffsetY = 8;
-
         // Draw based on type
         switch (this.type) {
             case 'semi-pad':
