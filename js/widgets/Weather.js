@@ -1,4 +1,4 @@
-// --- js/Weather.js ---
+// --- js/widgets/Weather.js ---
 
 // Module-level state
 let weatherSettings = {}; 
@@ -11,7 +11,6 @@ let currentDisplayedCode = null;
 let unitToggleC = null;
 let unitToggleF = null;
 let locationInput = null;
-
 
 /**
  * Initializes the weather widget with saved settings.
@@ -54,35 +53,68 @@ export function initWeather(settings, saveCallback) {
         }
     });
 
-    // 3. Load initial weather (cached first, then fetch)
-    loadCachedWeather();
-    startWeatherFetch();
+    // 3. Load initial weather (cached first)
+    // FIX: Check cache age before fetching to prevent rate limiting
+    loadCachedWeather().then((isFresh) => {
+        if (isFresh) {
+            console.log("Weather loaded from cache.");
+        } else {
+            // Only auto-fetch if we have a manual location set
+            // This prevents the intrusive "Know your location" prompt on first install
+            if (weatherSettings.manualLocation) {
+                startWeatherFetch();
+            } else {
+                // If no manual location and no fresh cache, just wait or show placeholder
+                // Note: We don't auto-trigger geolocation anymore for UX/Privacy reasons
+                // unless user specifically interacts (which we can add later)
+                if (weatherElement.textContent === "Weather unavailable") {
+                    weatherElement.textContent = "Set Location";
+                }
+            }
+        }
+    });
 }
 
 /**
  * Grabs weather data from storage and displays it immediately.
+ * Returns a Promise that resolves to true if data is fresh (< 60 mins), false otherwise.
  */
 function loadCachedWeather() {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get('cachedWeather', (result) => {
-            if (result.cachedWeather && result.cachedWeather.temp !== null) {
-                displayWeather(result.cachedWeather.temp, result.cachedWeather.code);
-            } else {
-                weatherElement.textContent = "Loading weather...";
-            }
-        });
-    } else {
-        weatherElement.textContent = "Weather unavailable";
-    }
+    return new Promise((resolve) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get('cachedWeather', (result) => {
+                if (result.cachedWeather && result.cachedWeather.temp !== null) {
+                    displayWeather(result.cachedWeather.temp, result.cachedWeather.code);
+                    
+                    // Check timestamp (1 hour expiration)
+                    const now = Date.now();
+                    const cacheTime = result.cachedWeather.timestamp || 0;
+                    const isFresh = (now - cacheTime) < (60 * 60 * 1000); 
+                    
+                    resolve(isFresh);
+                } else {
+                    weatherElement.textContent = "Weather unavailable";
+                    resolve(false);
+                }
+            });
+        } else {
+            weatherElement.textContent = "Weather unavailable";
+            resolve(false);
+        }
+    });
 }
 
 /**
  * Starts the process of fetching new weather data.
  */
 function startWeatherFetch() {
+    weatherElement.textContent = "Loading...";
+
     if (weatherSettings.manualLocation) {
         fetchGeocoding(weatherSettings.manualLocation);
     } else {
+        // We only reach here if explicitly requested or allowed.
+        // For now, we rely on manual location or previous permission.
         navigator.geolocation.getCurrentPosition(fetchWeather, handleLocationError);
     }
 }
@@ -115,8 +147,6 @@ async function fetchGeocoding(locationName) {
 
     } catch (error) {
         console.error("Geocoding error:", error);
-        console.error("Attempting XMLHttpRequest fallback...");
-        
         // Fallback to XMLHttpRequest
         try {
             const data = await xhrRequest(url);
@@ -133,8 +163,8 @@ async function fetchGeocoding(locationName) {
             fetchWeather(pos);
         } catch (xhrError) {
             console.error("XHR fallback also failed:", xhrError);
-            weatherElement.textContent = "Location not found";
-            saveWeather(null, null);
+            weatherElement.textContent = "Loc not found";
+            // Don't save bad state, let user retry
         }
     }
 }
@@ -165,39 +195,27 @@ async function fetchWeather(position) {
         const newTemp = Math.round(data.current_weather.temperature);
         const newCode = data.current_weather.weathercode;
 
-        if (newTemp !== currentDisplayedTemp || newCode !== currentDisplayedCode) {
-            displayWeather(newTemp, newCode);
-            saveWeather(newTemp, newCode);
-        }
+        // Always display and save if we fetched successfully
+        displayWeather(newTemp, newCode);
+        saveWeather(newTemp, newCode);
 
     } catch (error) {
         console.error("Error fetching weather:", error);
-        console.error("Error details:", {
-            message: error.message,
-            type: error.name,
-            stack: error.stack
-        });
-        console.error("Attempting XMLHttpRequest fallback...");
-        
         // Fallback to XMLHttpRequest
         try {
             const data = await xhrRequest(url);
-            
-            if (!data.current_weather) {
-                throw new Error('Invalid weather data received');
-            }
+            if (!data.current_weather) throw new Error('Invalid weather data');
             
             const newTemp = Math.round(data.current_weather.temperature);
             const newCode = data.current_weather.weathercode;
 
-            if (newTemp !== currentDisplayedTemp || newCode !== currentDisplayedCode) {
-                displayWeather(newTemp, newCode);
-                saveWeather(newTemp, newCode);
-            }
+            displayWeather(newTemp, newCode);
+            saveWeather(newTemp, newCode);
         } catch (xhrError) {
-            console.error("XHR fallback also failed:", xhrError);
+            console.error("XHR fallback failed:", xhrError);
+            // Only show error if we don't have old data displayed
             if (currentDisplayedTemp === null) {
-                weatherElement.textContent = "Weather unavailable";
+                weatherElement.textContent = "Error";
             }
         }
     }
@@ -208,7 +226,7 @@ async function fetchWeather(position) {
  */
 function displayWeather(temp, code) {
     if (temp === null || code === null) {
-        weatherElement.textContent = "Weather unavailable";
+        weatherElement.textContent = "Set Location";
         return;
     }
 
@@ -223,10 +241,14 @@ function displayWeather(temp, code) {
 }
 
 /**
- * Saves the latest weather data to Chrome storage.
+ * Saves the latest weather data to Chrome storage with a timestamp.
  */
 function saveWeather(temp, code) {
-    const cachedWeather = { temp, code };
+    const cachedWeather = { 
+        temp, 
+        code,
+        timestamp: Date.now() // FIX: Save timestamp for rate limiting
+    };
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ cachedWeather });
     }
@@ -238,11 +260,7 @@ function saveWeather(temp, code) {
 function handleLocationError(error) {
     console.warn("Geolocation error:", error.message);
     if (currentDisplayedTemp === null) {
-        if (error.code === error.PERMISSION_DENIED) {
-            weatherElement.textContent = "Enable location for weather.";
-        } else {
-            weatherElement.textContent = "Weather unavailable";
-        }
+        weatherElement.textContent = "Set Location";
     }
 }
 
@@ -261,14 +279,13 @@ function onSaveWeatherSettings() {
     // 3. Save to main storage via callback
     saveSettingsCallback({ weatherSettings: weatherSettings });
 
-    // 4. Force a refresh
-    weatherElement.textContent = "Loading weather..."; // Show loading
-    currentDisplayedTemp = null; // Force display update
-    startWeatherFetch(); // Fetch new data
+    // 4. Force a refresh immediately (bypass cache since user changed settings)
+    currentDisplayedTemp = null; 
+    startWeatherFetch(); 
 }
 
 /**
- * Helper function to map weather codes to icons. (Unchanged)
+ * Helper function to map weather codes to icons.
  */
 function getWeatherIcon(code) {
     if (code === 0) return '☀️';
@@ -290,29 +307,15 @@ function xhrRequest(url) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
-        
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    resolve(data);
-                } catch (e) {
-                    reject(new Error('Failed to parse JSON response'));
-                }
-            } else {
-                reject(new Error(`XHR request failed with status ${xhr.status}`));
-            }
+                try { resolve(JSON.parse(xhr.responseText)); } 
+                catch (e) { reject(new Error('Failed to parse JSON')); }
+            } else { reject(new Error(`XHR failed: ${xhr.status}`)); }
         };
-        
-        xhr.onerror = function() {
-            reject(new Error('XHR request failed - network error'));
-        };
-        
-        xhr.ontimeout = function() {
-            reject(new Error('XHR request timed out'));
-        };
-        
-        xhr.timeout = 10000; // 10 second timeout
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.ontimeout = () => reject(new Error('Timeout'));
+        xhr.timeout = 10000;
         xhr.send();
     });
 }

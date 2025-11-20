@@ -1,4 +1,4 @@
-// --- js/WidgetManager.js ---
+// --- js/widgets/WidgetManager.js ---
 // Manages all widget-related functionality: drag, resize, positioning, styling, and interactions
 
 const GRID_SIZE = 40;
@@ -104,6 +104,12 @@ function onWidgetMouseDown(e) {
     if (e.target.closest && e.target.closest(interactiveSelector)) {
         return; // allow normal interaction
     }
+
+    // === FIX: Z-INDEX STACKING ===
+    // Reset all z-indexes to 10 and bring current widget to 100
+    document.querySelectorAll('.widget').forEach(w => w.style.zIndex = '10');
+    widget.style.zIndex = '100';
+    // ==============================
 
     // --- Check for invisible resize corner ---
     const rect = widget.getBoundingClientRect();
