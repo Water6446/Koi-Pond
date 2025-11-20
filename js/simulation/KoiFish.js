@@ -1,8 +1,8 @@
-import { gaussianRandom } from './utils.js';
-import { config, foodConfig } from './config.js';
+import { gaussianRandom } from '../utils.js';
+import { config, foodConfig } from '../config.js';
 import { TrailParticle } from './TrailParticle.js';
 import { ChewParticle } from './ChewParticle.js';
-import { shadowState } from './TimeTheme.js'; // Import the shared shadow state
+import { shadowState } from '../TimeTheme.js'; // Import the shared shadow state
 
 // --- Koi Fish Class (MODIFIED) ---
 export class KoiFish {

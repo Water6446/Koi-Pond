@@ -1,7 +1,7 @@
-import { gaussianRandom } from './utils.js';
-import { config } from './config.js';
+import { gaussianRandom } from '../utils.js';
+import { config } from '../config.js';
 import { TrailParticle } from './TrailParticle.js';
-import { shadowState } from './TimeTheme.js'; // Import the shared shadow state
+import { shadowState } from '../TimeTheme.js'; // Import the shared shadow state
 
 // --- LillyPad Class (REFACTORED) ---
 export class LillyPad {
@@ -57,8 +57,13 @@ export class LillyPad {
         this.lastY = this.y;
     }
     
-    // --- OPTIMIZED draw method - with dynamic shadows ---
+    // --- OPTIMIZED draw method - with dynamic shadows and caching ---
     draw(ctx, flowerImage) {
+        // Initialize cache if needed, or update if flower image just loaded
+        if (!this.cacheCanvas || (this.type === 'flower' && flowerImage && !this.hasCachedFlowerImage)) {
+            this.cachePad(flowerImage);
+        }
+
         const r = this.radius;
 
         // --- 1. SHADOW PASS (Dynamic Time-Based) ---
@@ -75,12 +80,33 @@ export class LillyPad {
         ctx.fill();
         ctx.restore();
 
-        // --- 2. MAIN DRAW PASS ---
+        // --- 2. MAIN DRAW PASS (From Cache) ---
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         
-        // Draw based on type
+        // Draw the cached image
+        // The cache canvas is sized to diameter + padding
+        const size = this.cacheCanvas.width;
+        ctx.drawImage(this.cacheCanvas, -size / 2, -size / 2);
+
+        ctx.restore();
+    }
+
+    cachePad(flowerImage) {
+        const r = this.radius;
+        const padding = 4; // Extra space to avoid clipping
+        const size = Math.ceil(r * 2 + padding);
+        
+        this.cacheCanvas = document.createElement('canvas');
+        this.cacheCanvas.width = size;
+        this.cacheCanvas.height = size;
+        const ctx = this.cacheCanvas.getContext('2d');
+        
+        // Center coordinate system in the cache canvas
+        ctx.translate(size / 2, size / 2);
+        
+        // Draw based on type (same logic as original draw)
         switch (this.type) {
             case 'semi-pad':
                 // Left half
@@ -115,6 +141,7 @@ export class LillyPad {
                         flowerSize,
                         flowerSize
                     );
+                    this.hasCachedFlowerImage = true;
                 } else {
                     // Simplified fallback flower
                     ctx.fillStyle = '#f7b7da';
@@ -143,7 +170,5 @@ export class LillyPad {
                 ctx.fill();
                 break;
         }
-
-        ctx.restore();
     }
 }

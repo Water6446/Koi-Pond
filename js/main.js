@@ -1,14 +1,14 @@
 import { config } from './config.js';
-import { KoiFish } from './KoiFish.js';
-import { LillyPad } from './LillyPad.js';
-import { initClock } from './Clock.js';
-import { initQuote } from './Quote.js';
-import { initWeather } from './Weather.js';
-import { initFeeder, foods as feederFoods, updateFoods, drawFoods } from './Feeder.js';
-import { Ripple } from './Ripple.js';
-import { Dragonfly } from './Dragonfly.js';
+import { KoiFish } from './simulation/KoiFish.js';
+import { LillyPad } from './simulation/LillyPad.js';
+import { initClock } from './widgets/Clock.js';
+import { initQuote } from './widgets/Quote.js';
+import { initWeather } from './widgets/Weather.js';
+import { initFeeder, foods as feederFoods, updateFoods, drawFoods } from './widgets/Feeder.js';
+import { Ripple } from './simulation/Ripple.js';
+import { Dragonfly } from './simulation/Dragonfly.js';
 import { initTimeTheme, applyTimeTheme, getCurrentHourDecimal } from './TimeTheme.js';
-import { initTimer } from './Timer.js';
+import { initTimer } from './widgets/Timer.js';
 import {
     initWidgetManager,
     applyWidgetStyle,
@@ -18,7 +18,7 @@ import {
     setupWidgetStyleControls,
     setupSettingsPanelClickOutside,
     drawWidgetLilyPad
-} from './WidgetManager.js';
+} from './widgets/WidgetManager.js';
 
 const GRID_SIZE = 40;
 let autoTimeUpdateInterval = null; // Track the auto-update interval 
@@ -61,7 +61,7 @@ const defaultSettings = {
         "clock-widget": true,
         "weather-widget": true,
             "quote-widget": true,
-            "timer-widget": true
+            "timer-widget": false
     },
     weatherSettings: {
         units: "C",
@@ -300,6 +300,12 @@ document.addEventListener('DOMContentLoaded', () => {
         performanceMode = e.target.checked;
         userSettings.performanceMode = performanceMode;
         saveSettings({ performanceMode: performanceMode });
+        
+        if (performanceMode) {
+            document.body.classList.add('no-backdrop-filter');
+        } else {
+            document.body.classList.remove('no-backdrop-filter');
+        }
     });
 
     // Debug mode - Triple click detection on lily pads in top-right area
@@ -837,18 +843,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update ripples (less frequently)
         if (!skipFrame) {
-            ripples = ripples.filter(ripple => {
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                let ripple = ripples[i];
                 ripple.update(deltaTime * 2);
-                return !ripple.isFinished();
-            });
+                if (ripple.isFinished()) {
+                    // Swap and pop
+                    ripples[i] = ripples[ripples.length - 1];
+                    ripples.pop();
+                }
+            }
         }
         
         // Update dragonflies less frequently
         if (!skipFrame && !performanceMode) {
-            dragonflies = dragonflies.filter(dragonfly => {
+            for (let i = dragonflies.length - 1; i >= 0; i--) {
+                let dragonfly = dragonflies[i];
                 dragonfly.update(deltaTime * 2);
-                return !dragonfly.isOffScreen(canvas.width, canvas.height);
-            });
+                if (dragonfly.isOffScreen(canvas.width, canvas.height)) {
+                    // Swap and pop
+                    dragonflies[i] = dragonflies[dragonflies.length - 1];
+                    dragonflies.pop();
+                }
+            }
             
             // Spawn dragonflies more frequently (every 15-30 seconds)
             dragonflySpawnTimer += deltaTime * 2;
@@ -872,12 +888,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // LAYER 2: Draw particles with light blend
         if (!performanceMode) {
             ctx.globalCompositeOperation = 'lighter';
-            particles = particles.filter(p => {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
                 p.update(deltaTime * 2);
                 p.draw(ctx);
                 if (debugMode) drawCallCount++;
-                return p.life > 0;
-            });
+                
+                if (p.life <= 0) {
+                    // Swap and pop
+                    particles[i] = particles[particles.length - 1];
+                    particles.pop();
+                }
+            }
             ctx.globalCompositeOperation = 'source-over';
         } else {
             particles = []; // Clear particles in performance mode
@@ -1259,6 +1281,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Apply performance mode
         performanceMode = userSettings.performanceMode || false;
         document.getElementById('performanceModeToggle').checked = performanceMode;
+        if (performanceMode) {
+            document.body.classList.add('no-backdrop-filter');
+        } else {
+            document.body.classList.remove('no-backdrop-filter');
+        }
         
         // Apply debug mode (from saved settings, but user can toggle with triple-click)
         debugMode = userSettings.debugMode || false;
@@ -1339,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = bgUrl;
             
             // Timeout fallback after 1 second
-            setTimeout(resolve, 1000);
+            setTimeout(resolve, 300);
         });
         
         // Step 2: Fade in background
@@ -1375,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Step 6: Remove overlay from DOM after fade completes
         setTimeout(() => {
             loadingOverlay.remove();
-        },);
+        }, 100);
     }
     
     // --- STARTING POINT ---

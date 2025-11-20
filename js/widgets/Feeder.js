@@ -1,4 +1,4 @@
-import { config, foodConfig } from './config.js';
+import { config, foodConfig } from '../config.js';
 
 // Public food array (simple objects: {x, y, nutrition, radius, life})
 export const foods = [];
@@ -239,3 +239,4 @@ function loadPelletState() {
         }
     });
 }
+

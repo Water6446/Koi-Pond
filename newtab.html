@@ -359,16 +359,7 @@
         </div>
     </div>
     
-    <script>
-        // Disable transitions on page load
-        document.documentElement.classList.add('no-transition');
-        window.addEventListener('load', () => {
-            // Re-enable transitions after a brief delay
-            setTimeout(() => {
-                document.documentElement.classList.remove('no-transition');
-            }, 100);
-        });
-    </script>
+    <script src="js/page-load.js"></script>
     <script src="js/main.js" type="module" defer></script>
 </body>
 </html>
