@@ -1733,12 +1733,14 @@ canvas {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    line-height: 1;
+    line-height: 24px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    z-index: 10;
+    pointer-events: auto;
 }
 
 .debug-close:hover {

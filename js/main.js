@@ -312,8 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const debugOverlay = document.getElementById('debug-overlay');
     let clickCount = 0;
     let clickTimer = null;
-    const TOP_RIGHT_X = window.innerWidth - 300; // Top-right 300px from right edge
-    const TOP_RIGHT_Y = 300; // Top 300px from top
+    
+    // Dynamic hitbox for debug mode - 2% of screen size in the very top-right corner
+    let TOP_RIGHT_X = window.innerWidth * 0.98; // Right 2% of screen
+    let TOP_RIGHT_Y = window.innerHeight * 0.02; // Top 2% of screen
+    
+    // Update debug hitbox on window resize
+    window.addEventListener('resize', () => {
+        TOP_RIGHT_X = window.innerWidth * 0.98;
+        TOP_RIGHT_Y = window.innerHeight * 0.02;
+    });
     
     function toggleDebugMode(enable) {
         debugMode = enable;
@@ -334,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Debug close button
     document.getElementById('debug-close').addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         toggleDebugMode(false);
     });
@@ -709,6 +718,36 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error setting up customize panel:', e);
     }
 
+    const resetLayoutBtn = document.getElementById('resetLayoutBtn');
+    if (resetLayoutBtn) {
+        resetLayoutBtn.addEventListener('click', () => {
+            if (confirm("Reset all widget positions and sizes to default?")) {
+                // 1. Reset settings to defaults for positions/sizes
+                userSettings.widgetPositions = {}; 
+                userSettings.widgetSizes = { ...defaultSettings.widgetSizes }; 
+                
+                // 2. Clear inline styles on all widgets to allow CSS defaults
+                document.querySelectorAll('.widget').forEach(widget => {
+                    widget.style.left = '';
+                    widget.style.top = '';
+                    widget.style.transform = '';
+                });
+                
+                // 3. Save the reset state
+                saveSettings({ 
+                    widgetPositions: userSettings.widgetPositions,
+                    widgetSizes: userSettings.widgetSizes 
+                });
+
+                // 4. Clear the localStorage cache to prevent instant-load from restoring old spots
+                localStorage.removeItem('koiPondCachedSettings');
+
+                // 5. Reapply all widget settings to use defaults
+                applyAllWidgetSettings(defaultSettings);
+            }
+        });
+    }
+
     const hotCornerWidth = 450;
     const hotCornerHeight = 150;
     const isInHotCorner = () => (mouse.x < hotCornerWidth && mouse.y > window.innerHeight - hotCornerHeight);
@@ -730,7 +769,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateFeederVisibility = () => {
         const feederBag = document.getElementById('feeder-bag');
         if (feederBag) {
-            if (isInFeederCorner() || isMouseOverFeeder) {
+            // Only show if mouse is in corner AND over the feeder, OR if explicitly hovering
+            if (isMouseOverFeeder) {
                 feederBag.classList.add('visible');
             } else {
                 feederBag.classList.remove('visible');
